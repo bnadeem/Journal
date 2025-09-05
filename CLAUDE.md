@@ -111,3 +111,30 @@ The web application uses modern React/Next.js stack:
 - **Better Form Styling**: Fixed text color issues in habit creation forms
 - **Error Handling**: Improved loading states and error messages
 - **Visual Design**: Added proper day labels and today highlighting
+
+### Major Design System Update (September 2025)
+- **Unified Modern Design**: Updated entire application to match habits page aesthetic
+  - Changed from gradient backgrounds to clean `bg-gray-50`
+  - Adopted modern card design with `rounded-xl`, `border border-gray-200`, `shadow-sm`
+  - Consistent header pattern with icon + title + description
+  - Modern button styling with proper hover states
+- **Updated Pages**: Main journal, year view, month view, new entry, edit entry, individual entry
+- **Side-by-Side Layout**: Journal entries now display alongside habit tracking for integrated experience
+- **Enhanced Components**: JournalEditor, NewEntryButton, and navigation components updated
+- **Responsive Design**: Maintained mobile-first approach with improved desktop layouts
+
+### Habit Formation Science Integration
+- **Research-Based Tracking**: Implemented Dr. Phillippa Lally's habit formation research
+- **Four-Stage Model**: Initiation (1-21 days) → Development (22-66 days) → Stabilization (67-154 days) → Automatic (155+ days)
+- **Habit Permanence Metrics**: Automaticity score, consistency tracking, formation progress
+- **Dynamic Start Date**: Uses earliest completed log rather than creation date for accurate tracking
+- **Extended Data Range**: Fetches 2+ months of historical data to capture pre-system habits
+- **Milestone Tracking**: Progress indicators and next milestone encouragement
+- **Edit Functionality**: Full habit CRUD operations with modern modal interface
+
+### Architectural Patterns
+- **Consistent Layout Structure**: All pages follow modern header + content card pattern
+- **Integrated Habit Tracking**: Habits displayed alongside journal content where relevant
+- **Sticky Sidebars**: Habit trackers remain visible during scrolling for better UX
+- **Error State Management**: Consistent error handling and loading states across all pages
+- **Navigation Consistency**: Breadcrumb-style navigation in headers with proper button styling
