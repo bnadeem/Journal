@@ -43,7 +43,7 @@ export default async function EntryPage({ params }: PageProps) {
               ← Back to {MONTH_FULL_NAMES[month as MonthName]}
             </Link>
             <Link
-              href={`/entry/${year}/${month}/${day}/edit`}
+              href={`/edit?year=${year}&month=${month}&day=${day}`}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create Entry
@@ -102,7 +102,7 @@ export default async function EntryPage({ params }: PageProps) {
                   </div>
                 </div>
                 <Link
-                  href={`/entry/${year}/${month}/${day}/edit`}
+                  href={`/edit?year=${year}&month=${month}&day=${day}`}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
                   Edit Entry
