@@ -168,7 +168,7 @@ export default function HabitsPage() {
           {/* Create Habit Form */}
           {showCreateForm && (
             <div className="bg-white/90 backdrop-blur rounded-lg shadow-xl border border-gray-200 p-6 mb-8">
-              <h3 className="text-lg font-semibold mb-4">Create New Habit</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-900">Create New Habit</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -178,7 +178,7 @@ export default function HabitsPage() {
                     type="text"
                     value={newHabit.name}
                     onChange={(e) => setNewHabit({ ...newHabit, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder-gray-500"
                     placeholder="e.g., Morning Exercise"
                   />
                 </div>
@@ -191,7 +191,7 @@ export default function HabitsPage() {
                     type="text"
                     value={newHabit.category}
                     onChange={(e) => setNewHabit({ ...newHabit, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder-gray-500"
                     placeholder="e.g., Health, Learning"
                   />
                 </div>
@@ -203,7 +203,7 @@ export default function HabitsPage() {
                   <textarea
                     value={newHabit.description}
                     onChange={(e) => setNewHabit({ ...newHabit, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder-gray-500"
                     placeholder="Optional description..."
                     rows={2}
                   />
@@ -216,7 +216,7 @@ export default function HabitsPage() {
                   <select
                     value={newHabit.color}
                     onChange={(e) => setNewHabit({ ...newHabit, color: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                   >
                     <option value="blue">Blue</option>
                     <option value="green">Green</option>
@@ -234,7 +234,7 @@ export default function HabitsPage() {
                   <select
                     value={newHabit.targetFrequency}
                     onChange={(e) => setNewHabit({ ...newHabit, targetFrequency: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>

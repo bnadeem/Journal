@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllYears, getYearMonths, getMonthEntries, getDailyHabits } from '@/lib/file-operations';
-import { HabitLog, MONTH_NAMES } from '@/types/journal';
+import fs from 'fs';
+import path from 'path';
+import { HabitLog } from '@/types/journal';
 
 interface RouteParams {
   params: Promise<{ habitId: string }>;
@@ -24,68 +25,48 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const habitLogs: HabitLog[] = [];
     
-    // Get all years
-    const years = await getAllYears();
+    // Generate date range for the last 3 months if no dates provided
+    const endDateObj = endDate ? new Date(endDate) : new Date();
+    const startDateObj = startDate ? new Date(startDate) : new Date();
     
-    for (const year of years) {
-      const months = await getYearMonths(year);
-      
-      for (const month of months) {
-        const entries = await getMonthEntries(year, month);
-        
-        for (const entry of entries) {
-          try {
-            const dailyHabits = await getDailyHabits(year, month, entry.day);
-            const habitLog = dailyHabits.habits.find(h => h.habitId === habitId);
-            
-            if (habitLog) {
-              // Apply date filtering if provided
-              if (startDate || endDate) {
-                const logDate = new Date(habitLog.date);
-                
-                if (startDate && logDate < new Date(startDate)) {
-                  continue;
-                }
-                
-                if (endDate && logDate > new Date(endDate)) {
-                  continue;
-                }
-              }
-              
-              habitLogs.push(habitLog);
-            } else {
-              // Create a default habit log for this day if none exists
-              const monthIndex = MONTH_NAMES.indexOf(month);
-              const defaultLog = {
-                habitId,
-                date: `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(entry.day).padStart(2, '0')}`,
-                completed: false
-              };
-              
-              // Apply date filtering
-              if (startDate || endDate) {
-                const logDate = new Date(defaultLog.date);
-                
-                if (startDate && logDate < new Date(startDate)) {
-                  continue;
-                }
-                
-                if (endDate && logDate > new Date(endDate)) {
-                  continue;
-                }
-              }
-              
-              habitLogs.push(defaultLog);
-            }
-          } catch (error) {
-            console.error(`Error processing entry ${year}/${month}/${entry.day}:`, error);
-          }
-        }
-      }
+    if (!startDate) {
+      startDateObj.setMonth(endDateObj.getMonth() - 3);
     }
 
-    // Sort by date
-    habitLogs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Generate all dates in the range
+    const currentDate = new Date(startDateObj);
+    while (currentDate <= endDateObj) {
+      const year = currentDate.getFullYear().toString();
+      const month = currentDate.toLocaleString('default', { month: 'short' });
+      const day = currentDate.getDate().toString();
+      
+      // Check if habit log file exists for this date
+      const journalRoot = path.resolve(process.cwd(), '../');
+      const habitFilePath = path.join(journalRoot, year, month, `${day}-habits.json`);
+      
+      let completed = false;
+      
+      if (fs.existsSync(habitFilePath)) {
+        try {
+          const habitData = JSON.parse(fs.readFileSync(habitFilePath, 'utf-8'));
+          const habitLog = habitData.habits?.find((h: any) => h.habitId === habitId);
+          completed = habitLog?.completed || false;
+        } catch (error) {
+          console.error(`Error reading habit file ${habitFilePath}:`, error);
+        }
+      }
+      
+      // Create habit log entry
+      const dateString = currentDate.toISOString().split('T')[0];
+      habitLogs.push({
+        habitId,
+        date: dateString,
+        completed
+      });
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
     return NextResponse.json(habitLogs);
   } catch (error) {
