@@ -116,7 +116,7 @@ export default function NewEntryPage() {
           <JournalEditor
             initialContent=""
             title={title}
-            onSave={handleSave}
+            onManualSave={handleSave}
             onCancel={handleCancel}
             isLoading={isLoading}
           />

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getMonthEntries, readSummary } from '@/lib/file-operations';
 import { MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { ReactMarkdown } from '@/lib/markdown';
+import NewEntryButton from '@/components/ui/NewEntryButton';
 
 interface PageProps {
   params: Promise<{ year: string; month: string }>;
@@ -129,6 +130,7 @@ export default async function MonthPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+      <NewEntryButton />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getYearMonths } from '@/lib/file-operations';
 import { MONTH_FULL_NAMES } from '@/types/journal';
+import NewEntryButton from '@/components/ui/NewEntryButton';
 
 interface PageProps {
   params: Promise<{ year: string }>;
@@ -66,6 +67,7 @@ export default async function YearPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+      <NewEntryButton />
     </div>
   );
 }

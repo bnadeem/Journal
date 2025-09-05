@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getAllYears } from '@/lib/file-operations';
+import NewEntryButton from '@/components/ui/NewEntryButton';
 
 export default async function Home() {
   const years = await getAllYears();
@@ -53,6 +54,7 @@ export default async function Home() {
           </div>
         </div>
       </div>
+      <NewEntryButton />
     </div>
   );
 }

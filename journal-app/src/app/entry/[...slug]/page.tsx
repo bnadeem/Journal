@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { readEntry } from '@/lib/file-operations';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
-import { ReactMarkdown, markdownOptions } from '@/lib/markdown';
 import { formatDate } from '@/lib/utils';
 
 interface PageProps {
@@ -128,10 +127,8 @@ export default async function EntryPage({ params }: PageProps) {
 
                 {/* Content */}
                 <div className="relative pl-16 pr-4 py-2">
-                  <div className="prose prose-lg max-w-none">
-                    <ReactMarkdown {...markdownOptions}>
-                      {entry.content}
-                    </ReactMarkdown>
+                  <div className="font-kalam text-gray-800 text-lg leading-6 whitespace-pre-wrap">
+                    {entry.content}
                   </div>
                 </div>
               </div>
