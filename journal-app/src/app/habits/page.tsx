@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Habit, HabitStats } from '@/types/journal';
+import HabitCalendar from '@/components/habits/HabitCalendar';
 
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -287,7 +288,7 @@ export default function HabitsPage() {
                     key={habit.id}
                     className="bg-white/90 backdrop-blur rounded-lg shadow-xl border border-gray-200 p-6"
                   >
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start mb-6">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           <h3 className="text-xl font-semibold text-gray-900">{habit.name}</h3>
@@ -352,6 +353,9 @@ export default function HabitsPage() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Activity Calendar */}
+                    <HabitCalendar habit={habit} />
                   </div>
                 );
               })}

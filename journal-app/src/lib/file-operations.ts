@@ -346,7 +346,7 @@ export async function deleteHabit(habitId: string): Promise<boolean> {
 export async function getDailyHabits(year: string, month: MonthName, day: string): Promise<DailyHabits> {
   try {
     const dailyHabitsPath = await getDailyHabitsPath(year, month, day);
-    const date = `${year}-${MONTH_NAMES.indexOf(month) + 1}-${day}`;
+    const date = `${year}-${String(MONTH_NAMES.indexOf(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
     if (!fs.existsSync(dailyHabitsPath)) {
       // Create default daily habits from all active habits
@@ -369,7 +369,7 @@ export async function getDailyHabits(year: string, month: MonthName, day: string
     return JSON.parse(dailyHabitsData);
   } catch (error) {
     console.error(`Error reading daily habits ${year}/${month}/${day}:`, error);
-    const date = `${year}-${MONTH_NAMES.indexOf(month) + 1}-${day}`;
+    const date = `${year}-${String(MONTH_NAMES.indexOf(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return { date, habits: [] };
   }
 }
@@ -396,12 +396,13 @@ export async function toggleHabit(year: string, month: MonthName, day: string, h
   try {
     const dailyHabits = await getDailyHabits(year, month, day);
     const habitIndex = dailyHabits.habits.findIndex(h => h.habitId === habitId);
+    const date = `${year}-${String(MONTH_NAMES.indexOf(month) + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
     if (habitIndex === -1) {
       // Add new habit log
       dailyHabits.habits.push({
         habitId,
-        date: dailyHabits.date,
+        date,
         completed: true,
         completedAt: new Date().toISOString()
       });
@@ -410,7 +411,11 @@ export async function toggleHabit(year: string, month: MonthName, day: string, h
       const habit = dailyHabits.habits[habitIndex];
       habit.completed = !habit.completed;
       habit.completedAt = habit.completed ? new Date().toISOString() : undefined;
+      habit.date = date; // Ensure proper date format
     }
+    
+    // Ensure the dailyHabits date is also properly formatted
+    dailyHabits.date = date;
     
     return await saveDailyHabits(year, month, day, dailyHabits);
   } catch (error) {
