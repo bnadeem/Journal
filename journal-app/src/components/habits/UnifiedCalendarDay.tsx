@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import HabitSummary from './HabitSummary';
+import { HabitScore } from '@/lib/habit-scoring';
 
 export interface HabitCompletion {
   habitId: string;
@@ -20,12 +22,14 @@ export interface UnifiedCalendarDayData {
 interface UnifiedCalendarDayProps {
   dayData: UnifiedCalendarDayData;
   visibleHabits: string[];
+  habitScores?: Record<string, HabitScore>;
   onDayClick: (date: Date, habits: HabitCompletion[]) => void;
 }
 
 export default function UnifiedCalendarDay({ 
   dayData, 
   visibleHabits, 
+  habitScores = {},
   onDayClick 
 }: UnifiedCalendarDayProps) {
   const [isHovered, setIsHovered] = useState(false);
@@ -45,6 +49,9 @@ export default function UnifiedCalendarDay({
     onDayClick(date, habits);
   };
   
+  const completionRatio = habits.length > 0 ? `${visibleCompletedHabits.length}/${habits.filter(h => visibleHabits.includes(h.habitId)).length}` : '0/0';
+  const completionPercentage = habits.length > 0 ? Math.round((visibleCompletedHabits.length / habits.filter(h => visibleHabits.includes(h.habitId)).length) * 100) : 0;
+  
   return (
     <button 
       className={`
@@ -55,9 +62,15 @@ export default function UnifiedCalendarDay({
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      title={`${date.toLocaleDateString()} - ${visibleCompletedHabits.length} habits completed`}
+      title={`${date.toLocaleDateString()} - ${completionRatio} habits completed (${completionPercentage}%)`}
     >
       <span className="day-number">{date.getDate()}</span>
+      
+      {visibleCompletedHabits.length > 0 && (
+        <div className="completion-ratio">
+          {completionRatio}
+        </div>
+      )}
       
       <div className="habit-indicators">
         {visibleDots.map((habit, index) => (

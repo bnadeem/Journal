@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Habit, HabitLog } from '@/types/journal';
 import UnifiedCalendarDay, { HabitCompletion, UnifiedCalendarDayData } from './UnifiedCalendarDay';
 
@@ -18,6 +18,9 @@ export default function UnifiedCalendar({
   const [calendarData, setCalendarData] = useState<UnifiedCalendarDayData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [focusedDayIndex, setFocusedDayIndex] = useState<number>(-1);
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const dayRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     loadCalendarData();
@@ -158,6 +161,55 @@ export default function UnifiedCalendar({
     return days[dayIndex];
   };
 
+  const focusDay = useCallback((index: number) => {
+    if (index >= 0 && index < calendarData.length && dayRefs.current[index]) {
+      setFocusedDayIndex(index);
+      dayRefs.current[index]?.focus();
+    }
+  }, [calendarData.length]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, dayIndex: number) => {
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        focusDay(Math.max(0, dayIndex - 7));
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        focusDay(Math.min(calendarData.length - 1, dayIndex + 7));
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        focusDay(Math.max(0, dayIndex - 1));
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        focusDay(Math.min(calendarData.length - 1, dayIndex + 1));
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        const day = calendarData[dayIndex];
+        if (day) {
+          onDayClick(day.date, day.habits);
+        }
+        break;
+      case 'Home':
+        e.preventDefault();
+        focusDay(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        focusDay(calendarData.length - 1);
+        break;
+    }
+  }, [calendarData, focusDay, onDayClick]);
+
+  // Initialize dayRefs array when calendar data changes
+  useEffect(() => {
+    dayRefs.current = dayRefs.current.slice(0, calendarData.length);
+  }, [calendarData.length]);
+
   if (isLoading) {
     return (
       <div className="unified-calendar-loading">
@@ -177,11 +229,23 @@ export default function UnifiedCalendar({
   }
 
   return (
-    <div className="unified-calendar">
+    <div 
+      className="unified-calendar"
+      role="grid"
+      aria-label="Habit tracking calendar showing last 3 months"
+    >
       {/* Day headers */}
-      <div className="calendar-day-headers">
+      <div 
+        className="calendar-day-headers"
+        role="row"
+      >
         {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
-          <div key={dayIndex} className="day-header">
+          <div 
+            key={dayIndex} 
+            className="day-header"
+            role="columnheader"
+            aria-label={`${getDayAbbreviation(dayIndex)} column`}
+          >
             {getDayAbbreviation(dayIndex)}
           </div>
         ))}
@@ -201,18 +265,31 @@ export default function UnifiedCalendar({
                 </h3>
                 
                 <div className="calendar-month-grid">
-                  {gridDays.map((day, index) => {
+                  {gridDays.map((day, gridIndex) => {
                     if (!day) {
-                      return <div key={`empty-${index}`} className="empty-day-cell"></div>;
+                      return <div key={`empty-${gridIndex}`} className="empty-day-cell"></div>;
                     }
                     
+                    const dayIndex = calendarData.findIndex(d => 
+                      d.date.toDateString() === day.date.toDateString()
+                    );
+                    
                     return (
-                      <UnifiedCalendarDay
-                        key={`${day.date.toISOString()}-${index}`}
-                        dayData={day}
-                        visibleHabits={visibleHabits}
-                        onDayClick={onDayClick}
-                      />
+                      <div
+                        key={`${day.date.toISOString()}-${gridIndex}`}
+                        data-day-index={dayIndex}
+                        onKeyDown={(e) => handleKeyDown(e, dayIndex)}
+                        tabIndex={dayIndex === focusedDayIndex ? 0 : -1}
+                        role="gridcell"
+                        aria-label={`${day.date.toLocaleDateString()}, ${day.habits.filter(h => h.completed && visibleHabits.includes(h.habitId)).length} of ${day.habits.filter(h => visibleHabits.includes(h.habitId)).length} habits completed${day.isToday ? ', today' : ''}`}
+                        aria-describedby={`day-${day.date.getDate()}-details`}
+                      >
+                        <UnifiedCalendarDay
+                          dayData={day}
+                          visibleHabits={visibleHabits}
+                          onDayClick={onDayClick}
+                        />
+                      </div>
                     );
                   })}
                 </div>

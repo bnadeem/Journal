@@ -6,6 +6,12 @@
       "date": "2025-09-04",
       "completed": true,
       "completedAt": "2025-09-05T19:59:40.449Z"
+    },
+    {
+      "habitId": "2025-09-05T20:34:49.444Z-habit-0.47966603253223417",
+      "completed": true,
+      "createdAt": "2025-09-05T21:14:52.726Z",
+      "updatedAt": "2025-09-05T21:14:52.726Z"
     }
   ]
 }
