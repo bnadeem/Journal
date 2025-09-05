@@ -1,26 +1,22 @@
 /* Unified Calendar Styles */
 .unified-calendar {
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: transparent;
+  padding: 0;
 }
 
 /* Day Headers */
 .calendar-day-headers {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  margin-bottom: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
+  gap: 1px;
+  margin-bottom: 8px;
+  padding: 0;
 }
 
 .day-header {
   text-align: center;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: #6b7280;
   padding: 8px 4px;
 }
@@ -29,20 +25,21 @@
 .calendar-months {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
 .calendar-month-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .month-header {
-  font-size: 16px;
-  font-weight: 600;
-  color: #374151;
+  font-size: 15px;
+  font-weight: 500;
+  color: #6b7280;
   margin: 0;
+  margin-bottom: 8px;
 }
 
 .calendar-month-grid {
@@ -61,30 +58,29 @@
   position: relative;
   width: 100%;
   height: 60px;
-  border: 1px solid #e5e7eb;
+  border: 2px solid #d1d5db;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px;
+  justify-content: center;
+  padding: 4px;
   cursor: pointer;
   transition: all 200ms ease-out;
   background: white;
-  border-radius: 4px;
+  border-radius: 8px;
   font-family: inherit;
 }
 
 .unified-calendar-day:hover {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-  transform: scale(1.02) translateZ(0);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+  transform: scale(1.02);
   z-index: 10;
   transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .unified-calendar-day:active {
-  transform: scale(0.98) translateZ(0);
+  transform: scale(0.95);
   transition: all 100ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -95,10 +91,10 @@
 }
 
 .unified-calendar-day.today {
-  border: 2px solid #3b82f6;
-  border-radius: 6px;
+  border: 3px solid #3b82f6;
+  border-radius: 8px;
   animation: todayPulse 2s ease-in-out infinite;
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  background: #dbeafe;
 }
 
 @keyframes todayPulse {
@@ -113,13 +109,25 @@
 }
 
 .unified-calendar-day.has-completions {
-  background-color: #f0fdf4;
-  border-color: #bbf7d0;
+  background: white;
+  border-color: #a3a3a3;
 }
 
 .unified-calendar-day.has-completions.today {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-  border-color: #3b82f6;
+  background: #dbeafe;
+  border: 3px solid #3b82f6;
+}
+
+.unified-calendar-day.today .day-number {
+  color: #1e40af;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.unified-calendar-day.has-completions.today .day-number {
+  color: #1e40af;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
 }
 
 /* Day Quality Indicators */
@@ -163,40 +171,68 @@
 }
 
 .day-number {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 700;
   color: #374151;
   line-height: 1;
+  z-index: 10;
+  position: relative;
+  text-align: center;
+}
+
+.unified-calendar-day.has-completions .day-number {
+  color: #374151;
+  font-weight: 700;
 }
 
 .completion-ratio {
-  font-size: 8px;
-  font-weight: 600;
-  color: #059669;
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
   line-height: 1;
-  background: rgba(209, 250, 229, 0.8);
-  padding: 1px 3px;
-  border-radius: 6px;
-  margin-top: 1px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px 4px;
+  border-radius: 8px;
+  margin-top: 2px;
+  text-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* Habit Indicators */
+/* Large Habit Dots Layout */
 .habit-indicators {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  gap: 2px;
-  flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
-  min-height: 12px;
-  width: 100%;
+  justify-content: space-between;
+  padding: 8px;
+  pointer-events: none;
 }
 
-/* Multi-Size Dot System */
+.habit-dots-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+.habit-dots-right {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+/* Large Habit Dots */
 .habit-dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border: 2px solid white;
   transition: all 200ms ease;
   display: flex;
   align-items: center;
@@ -204,28 +240,9 @@
   position: relative;
 }
 
-.habit-dot.size-large {
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  z-index: 3;
-}
-
-.habit-dot.size-medium {
-  width: 8px;
-  height: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-  z-index: 2;
-}
-
-.habit-dot.size-small {
-  width: 6px;
-  height: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  z-index: 1;
+.habit-dot:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .habit-dot.primary-habit {
@@ -298,23 +315,20 @@
 }
 
 .overflow-indicator {
+  width: 12px;
+  height: 12px;
   font-size: 7px;
-  color: #6b7280;
-  font-weight: 600;
-  line-height: 1;
-  background: #f3f4f6;
-  border-radius: 6px;
-  padding: 1px 2px;
-  margin-left: 1px;
-  border: 1px solid #e5e7eb;
-}
-
-.overflow-indicator.large {
-  font-size: 8px;
-  padding: 2px 4px;
-  background: #374151;
   color: white;
-  border-radius: 8px;
+  font-weight: 700;
+  line-height: 1;
+  background: #6b7280;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
 }
 
 /* Hover Preview */

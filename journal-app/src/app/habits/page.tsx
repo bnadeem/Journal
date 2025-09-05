@@ -220,30 +220,88 @@ export default function HabitsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Habit Tracker</h1>
-              <p className="text-gray-600">Manage and track your daily habits</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Modern Header */}
+          <div className="flex justify-between items-start mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-600 rounded-xl">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Habit Tracker</h1>
+                <p className="text-gray-600 text-sm">Manage and track your daily habits</p>
+              </div>
             </div>
-            <div className="flex space-x-4">
+            <div className="flex items-center space-x-3">
               <Link
                 href="/"
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg hover:border-gray-400"
               >
                 ← Back to Journal
               </Link>
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
               >
                 Add New Habit
               </button>
             </div>
           </div>
+
+          {/* Summary Stats Cards */}
+          {habits.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{habits.filter(h => h.isActive).length}</p>
+                    <p className="text-gray-600 text-sm">Active Habits</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {Math.round(Object.values(habitStats).reduce((acc, stat) => acc + stat.completionRate, 0) / Math.max(Object.values(habitStats).length, 1))}%
+                    </p>
+                    <p className="text-gray-600 text-sm">Completion Rate</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {Math.max(...Object.values(habitStats).map(stat => stat.streak), 0)}
+                    </p>
+                    <p className="text-gray-600 text-sm">Best Streak</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Create Habit Form */}
           {showCreateForm && (
@@ -374,32 +432,29 @@ export default function HabitsPage() {
             </div>
           ) : (
             <>
-              {/* Compact Habit Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {/* Modern Habit Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {habits.map((habit) => {
                   const stats = habitStats[habit.id];
+                  const completionPercentage = stats ? Math.round(stats.completionRate) : 0;
                   return (
                     <div
                       key={habit.id}
-                      className="bg-white/90 backdrop-blur rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+                      className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
                     >
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-4 h-4 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: getHexColor(habit.color || '#3b82f6') }}
-                          />
-                          <div>
-                            <h4 className="font-medium text-gray-900 text-sm">{habit.name}</h4>
-                            {habit.category && (
-                              <span className="text-xs text-gray-500">{habit.category}</span>
-                            )}
-                          </div>
+                          <h3 className="font-semibold text-gray-900 text-lg">{habit.name}</h3>
+                          {habit.category && (
+                            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                              {habit.category}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => toggleHabitActive(habit.id, !habit.isActive)}
-                            className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                            className={`text-sm px-3 py-1 rounded-full transition-colors ${
                               habit.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                             }`}
                           >
@@ -407,28 +462,56 @@ export default function HabitsPage() {
                           </button>
                           <button
                             onClick={() => deleteHabit(habit.id)}
-                            className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                           >
-                            Delete
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                           </button>
                         </div>
                       </div>
                       
                       {stats && (
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div className="text-center p-2 bg-gray-50 rounded">
-                            <div className="font-semibold text-gray-900">{stats.streak}</div>
-                            <div className="text-gray-600 text-xs">Streak</div>
+                        <>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-4 text-sm">
+                              <span className="flex items-center space-x-1">
+                                <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                <span className="text-gray-600">{stats.streak}</span>
+                              </span>
+                              <span className="flex items-center space-x-1">
+                                <div 
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: getHexColor(habit.color || '#3b82f6') }}
+                                ></div>
+                                <span className="text-gray-600">{stats.bestStreak}</span>
+                              </span>
+                              <span className="font-semibold text-gray-900">{completionPercentage}%</span>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {stats.completedDays}/{stats.totalDays}
+                            </div>
                           </div>
-                          <div className="text-center p-2 bg-gray-50 rounded">
-                            <div className="font-semibold text-gray-900">{stats.bestStreak}</div>
-                            <div className="text-gray-600 text-xs">Best</div>
+                          
+                          {/* Progress Bar */}
+                          <div className="mb-4">
+                            <div className="text-xs text-gray-600 mb-2">Progress</div>
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full transition-all duration-500 ease-out"
+                                style={{ 
+                                  width: `${completionPercentage}%`,
+                                  backgroundColor: getHexColor(habit.color || '#3b82f6')
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                              <span>Current: {stats.streak}</span>
+                              <span>Goal: {stats.bestStreak}</span>
+                              <span>{completionPercentage}% Done</span>
+                            </div>
                           </div>
-                          <div className="text-center p-2 bg-gray-50 rounded">
-                            <div className="font-semibold text-gray-900">{stats.completionRate.toFixed(0)}%</div>
-                            <div className="text-gray-600 text-xs">Rate</div>
-                          </div>
-                        </div>
+                        </>
                       )}
                     </div>
                   );
@@ -444,19 +527,102 @@ export default function HabitsPage() {
                 onAddHabit={() => setShowCreateForm(true)}
               />
 
-              {/* Unified Calendar */}
-              <div className="bg-white/90 backdrop-blur rounded-lg shadow-xl border border-gray-200 p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Activity Overview - Last 3 Months</h2>
-                  <div className="text-sm text-gray-600">
-                    Showing {visibleHabits.length} of {habits.length} habits
+              {/* Activity Heatmap Section */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">Activity Heatmap</h2>
+                        <p className="text-gray-600 text-sm">Track your habit consistency over time</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-6">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-gray-600">Less</span>
+                          <div className="flex space-x-1">
+                            <div className="w-3 h-3 bg-gray-100 rounded-sm"></div>
+                            <div className="w-3 h-3 bg-green-200 rounded-sm"></div>
+                            <div className="w-3 h-3 bg-green-400 rounded-sm"></div>
+                            <div className="w-3 h-3 bg-green-600 rounded-sm"></div>
+                          </div>
+                          <span className="text-sm text-gray-600">More</span>
+                        </div>
+                        <div className="text-sm text-blue-600 font-medium">
+                          Showing all {habits.length} habits
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <UnifiedCalendar
-                  habits={habits.map(h => ({ ...h, color: getHexColor(h.color || '#3b82f6') }))}
-                  visibleHabits={visibleHabits}
-                  onDayClick={handleDayClick}
-                />
+                
+                <div className="p-6">
+                  <UnifiedCalendar
+                    habits={habits.map(h => ({ ...h, color: getHexColor(h.color || '#3b82f6') }))}
+                    visibleHabits={visibleHabits}
+                    onDayClick={handleDayClick}
+                  />
+                </div>
+                
+                {/* Bottom Statistics */}
+                <div className="px-6 pb-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-blue-50 rounded-lg p-4 text-center">
+                      <div className="p-2 bg-blue-100 rounded-lg inline-flex mb-2">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {Object.values(habitStats).reduce((acc, stat) => acc + stat.completedDays, 0)}
+                      </p>
+                      <p className="text-gray-600 text-sm">Active Days</p>
+                    </div>
+                    
+                    <div className="bg-green-50 rounded-lg p-4 text-center">
+                      <div className="p-2 bg-green-100 rounded-lg inline-flex mb-2">
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {Math.max(...Object.values(habitStats).map(stat => stat.streak), 0)}
+                      </p>
+                      <p className="text-gray-600 text-sm">Current Streak</p>
+                    </div>
+                    
+                    <div className="bg-purple-50 rounded-lg p-4 text-center">
+                      <div className="p-2 bg-purple-100 rounded-lg inline-flex mb-2">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {Math.max(...Object.values(habitStats).map(stat => stat.bestStreak), 0)}
+                      </p>
+                      <p className="text-gray-600 text-sm">Longest Streak</p>
+                    </div>
+                    
+                    <div className="bg-orange-50 rounded-lg p-4 text-center">
+                      <div className="p-2 bg-orange-100 rounded-lg inline-flex mb-2">
+                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {habits.length > 0 ? (Object.values(habitStats).reduce((acc, stat) => acc + stat.completedDays, 0) / habits.length).toFixed(1) : '0'}
+                      </p>
+                      <p className="text-gray-600 text-sm">Daily Average</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           )}

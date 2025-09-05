@@ -64,32 +64,40 @@ export default function UnifiedCalendarDay({
       onMouseLeave={() => setIsHovered(false)}
       title={`${date.toLocaleDateString()} - ${completionRatio} habits completed (${completionPercentage}%)`}
     >
+      {/* Central Day Number */}
       <span className="day-number">{date.getDate()}</span>
       
+      {/* Large Habit Dots Positioned Around Number */}
       {visibleCompletedHabits.length > 0 && (
-        <div className="completion-ratio">
-          {completionRatio}
+        <div className="habit-indicators">
+          <div className="habit-dots-left">
+            {visibleCompletedHabits.slice(0, 3).map((habit, index) => (
+              <div 
+                key={habit.habitId}
+                className="habit-dot"
+                style={{ backgroundColor: habit.habitColor }}
+                title={habit.habitName}
+              />
+            ))}
+          </div>
+          
+          <div className="habit-dots-right">
+            {visibleCompletedHabits.slice(3, 6).map((habit, index) => (
+              <div 
+                key={habit.habitId}
+                className="habit-dot"
+                style={{ backgroundColor: habit.habitColor }}
+                title={habit.habitName}
+              />
+            ))}
+            {visibleCompletedHabits.length > 6 && (
+              <div className="overflow-indicator" title={`+${visibleCompletedHabits.length - 6} more habits`}>
+                +{visibleCompletedHabits.length - 6}
+              </div>
+            )}
+          </div>
         </div>
       )}
-      
-      <div className="habit-indicators">
-        {visibleDots.map((habit, index) => (
-          <div 
-            key={habit.habitId}
-            className="habit-dot"
-            style={{ 
-              backgroundColor: habit.habitColor,
-              zIndex: visibleDots.length - index 
-            }}
-            title={habit.habitName}
-          />
-        ))}
-        {overflowCount > 0 && (
-          <div className="overflow-indicator" title={`+${overflowCount} more habits`}>
-            +{overflowCount}
-          </div>
-        )}
-      </div>
       
       {isHovered && visibleCompletedHabits.length > 0 && (
         <div className="hover-preview">
