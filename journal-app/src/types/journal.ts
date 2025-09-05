@@ -58,3 +58,37 @@ export const MONTH_FULL_NAMES: Record<MonthName, string> = {
   Nov: 'November',
   Dec: 'December'
 };
+
+export interface Habit {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  color?: string;
+  targetFrequency?: 'daily' | 'weekly' | 'monthly';
+  createdAt: string;
+  isActive: boolean;
+}
+
+export interface HabitLog {
+  habitId: string;
+  date: string;
+  completed: boolean;
+  notes?: string;
+  completedAt?: string;
+}
+
+export interface DailyHabits {
+  date: string;
+  habits: HabitLog[];
+}
+
+export interface HabitStats {
+  habitId: string;
+  totalDays: number;
+  completedDays: number;
+  streak: number;
+  bestStreak: number;
+  completionRate: number;
+  lastCompleted?: string;
+}

@@ -12,9 +12,33 @@ export default async function Home() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Personal Journal
           </h1>
-          <p className="text-lg text-gray-600 mb-12">
+          <p className="text-lg text-gray-600 mb-8">
             Your thoughts, reflections, and journey through life
           </p>
+
+          {/* Quick Navigation */}
+          <div className="flex justify-center space-x-4 mb-8">
+            <Link
+              href="/habits"
+              className="flex items-center px-6 py-3 bg-green-100 text-green-800 rounded-lg hover:bg-green-200 transition-all duration-200 border border-green-300"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Habit Tracker
+            </Link>
+            <Link
+              href="/entry/new"
+              className="flex items-center px-6 py-3 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-all duration-200 border border-blue-300"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M12 4v16m8-8H4" />
+              </svg>
+              New Entry
+            </Link>
+          </div>
 
           <div className="bg-white/80 backdrop-blur rounded-lg shadow-lg p-8 border border-gray-200">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">

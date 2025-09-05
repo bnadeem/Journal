@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { readEntry, getAdjacentEntries } from '@/lib/file-operations';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { formatDate } from '@/lib/utils';
+import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
 
 interface PageProps {
   params: Promise<{ slug: string[] }>;
@@ -134,6 +135,15 @@ export default async function EntryPage({ params }: PageProps) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Habit Tracker */}
+          <div className="mt-8">
+            <HabitTrackerWrapper 
+              year={year}
+              month={month}
+              day={day}
+            />
           </div>
 
           {/* Navigation between entries */}
