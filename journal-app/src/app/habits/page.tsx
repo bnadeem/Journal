@@ -6,6 +6,7 @@ import { Habit, HabitStats, HabitLog } from '@/types/journal';
 import UnifiedCalendar from '@/components/habits/UnifiedCalendar';
 import HabitLegend from '@/components/habits/HabitLegend';
 import DayDetailModal from '@/components/habits/DayDetailModal';
+import HabitEditModal from '@/components/habits/HabitEditModal';
 import { HabitCompletion } from '@/components/habits/UnifiedCalendarDay';
 import { calculateHabitPermanence, getHabitStatusMessage, getNextMilestone, HABIT_FORMATION_STAGES } from '@/lib/habit-permanence';
 import '@/components/habits/unified-calendar.css';
@@ -20,6 +21,7 @@ export default function HabitsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [visibleHabits, setVisibleHabits] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [newHabit, setNewHabit] = useState({
     name: '',
     description: '',
@@ -135,10 +137,30 @@ export default function HabitsPage() {
   };
 
   const openHabitEditor = (habitId: string) => {
-    // For now, just show an alert - can implement proper edit modal later
     const habit = habits.find(h => h.id === habitId);
     if (habit) {
-      alert(`Edit ${habit.name} - Feature coming soon!`);
+      setEditingHabit(habit);
+    }
+  };
+
+  const handleEditHabit = async (habitId: string, updates: Partial<Habit>) => {
+    try {
+      const response = await fetch('/api/habits', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: habitId, ...updates }),
+      });
+
+      if (response.ok) {
+        fetchHabits();
+      } else {
+        throw new Error('Failed to update habit');
+      }
+    } catch (error) {
+      console.error('Error updating habit:', error);
+      throw error;
     }
   };
 
@@ -491,8 +513,18 @@ export default function HabitsPage() {
                             {habit.isActive ? 'Active' : 'Inactive'}
                           </button>
                           <button
+                            onClick={() => openHabitEditor(habit.id)}
+                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Edit habit"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
                             onClick={() => deleteHabit(habit.id)}
                             className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Delete habit"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -689,6 +721,14 @@ export default function HabitsPage() {
               onToggleHabit={handleToggleHabit}
             />
           )}
+
+          {/* Habit Edit Modal */}
+          <HabitEditModal
+            habit={editingHabit}
+            isOpen={editingHabit !== null}
+            onClose={() => setEditingHabit(null)}
+            onSave={handleEditHabit}
+          />
         </div>
       </div>
     </div>
