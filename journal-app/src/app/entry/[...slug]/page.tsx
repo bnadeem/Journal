@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { readEntry } from '@/lib/file-operations';
+import { readEntry, getAdjacentEntries } from '@/lib/file-operations';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { formatDate } from '@/lib/utils';
 
@@ -25,6 +25,7 @@ export default async function EntryPage({ params }: PageProps) {
   }
 
   const entry = await readEntry(year, month as MonthName, day);
+  const { prevEntry, nextEntry } = await getAdjacentEntries(year, month as MonthName, day);
 
   if (!entry) {
     return (
@@ -136,13 +137,62 @@ export default async function EntryPage({ params }: PageProps) {
           </div>
 
           {/* Navigation between entries */}
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex justify-between items-center">
+            {/* Previous Entry */}
+            {prevEntry ? (
+              <Link
+                href={`/entry/${prevEntry.year}/${prevEntry.month}/${prevEntry.day}`}
+                className="flex items-center px-4 py-3 bg-white/80 text-gray-700 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 border border-gray-200"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <div className="text-left">
+                  <div className="text-xs text-gray-500">Previous Entry</div>
+                  <div className="font-medium">{MONTH_FULL_NAMES[prevEntry.month as MonthName]} {prevEntry.day}, {prevEntry.year}</div>
+                </div>
+              </Link>
+            ) : (
+              <div className="invisible flex items-center px-4 py-3">
+                <div className="w-4 h-4 mr-2"></div>
+                <div className="text-left">
+                  <div className="text-xs">Previous Entry</div>
+                  <div className="font-medium">No previous entry</div>
+                </div>
+              </div>
+            )}
+
+            {/* Back to Month */}
             <Link
               href={`/month/${year}/${month}`}
               className="px-6 py-3 bg-white/80 text-gray-700 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 border border-gray-200"
             >
               ← Back to {MONTH_FULL_NAMES[month as MonthName]} {year}
             </Link>
+
+            {/* Next Entry */}
+            {nextEntry ? (
+              <Link
+                href={`/entry/${nextEntry.year}/${nextEntry.month}/${nextEntry.day}`}
+                className="flex items-center px-4 py-3 bg-white/80 text-gray-700 rounded-lg hover:bg-white hover:shadow-md transition-all duration-200 border border-gray-200"
+              >
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Next Entry</div>
+                  <div className="font-medium">{MONTH_FULL_NAMES[nextEntry.month as MonthName]} {nextEntry.day}, {nextEntry.year}</div>
+                </div>
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            ) : (
+              <div className="invisible flex items-center px-4 py-3">
+                <div className="text-right">
+                  <div className="text-xs">Next Entry</div>
+                  <div className="font-medium">No next entry</div>
+                </div>
+                <div className="w-4 h-4 ml-2"></div>
+              </div>
+            )}
           </div>
         </div>
       </div>

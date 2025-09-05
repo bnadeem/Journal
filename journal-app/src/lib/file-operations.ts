@@ -213,3 +213,47 @@ export async function getYearMonths(year: string): Promise<MonthName[]> {
     return [];
   }
 }
+
+export async function getAllEntries(): Promise<JournalEntry[]> {
+  try {
+    const years = await getAllYears();
+    const allEntries: JournalEntry[] = [];
+    
+    for (const year of years) {
+      const months = await getYearMonths(year);
+      for (const month of months) {
+        const entries = await getMonthEntries(year, month);
+        allEntries.push(...entries);
+      }
+    }
+    
+    // Sort entries by date
+    allEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    return allEntries;
+  } catch (error) {
+    console.error('Error getting all entries:', error);
+    return [];
+  }
+}
+
+export async function getAdjacentEntries(year: string, month: MonthName, day: string): Promise<{ prevEntry: JournalEntry | null; nextEntry: JournalEntry | null }> {
+  try {
+    const allEntries = await getAllEntries();
+    const currentEntryId = generateId(year, month, day);
+    
+    const currentIndex = allEntries.findIndex(entry => entry.id === currentEntryId);
+    
+    if (currentIndex === -1) {
+      return { prevEntry: null, nextEntry: null };
+    }
+    
+    const prevEntry = currentIndex > 0 ? allEntries[currentIndex - 1] : null;
+    const nextEntry = currentIndex < allEntries.length - 1 ? allEntries[currentIndex + 1] : null;
+    
+    return { prevEntry, nextEntry };
+  } catch (error) {
+    console.error('Error getting adjacent entries:', error);
+    return { prevEntry: null, nextEntry: null };
+  }
+}
