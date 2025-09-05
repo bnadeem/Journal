@@ -93,6 +93,49 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
     return days[dayIndex];
   };
 
+  const toggleDayCompletion = async (day: CalendarDay) => {
+    const newCompletedStatus = !day.isCompleted;
+    
+    // Optimistic update
+    setCalendarData(prevData => 
+      prevData.map(d => 
+        d.date.toDateString() === day.date.toDateString() 
+          ? { ...d, isCompleted: newCompletedStatus }
+          : d
+      )
+    );
+
+    try {
+      const response = await fetch(`/api/habits/${habit.id}/logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: day.date.toISOString().split('T')[0],
+          completed: newCompletedStatus
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update habit: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error toggling habit completion:', error);
+      
+      // Revert optimistic update on error
+      setCalendarData(prevData => 
+        prevData.map(d => 
+          d.date.toDateString() === day.date.toDateString() 
+            ? { ...d, isCompleted: day.isCompleted }
+            : d
+        )
+      );
+      
+      setError('Failed to update habit completion');
+    }
+  };
+
 
   const completedDays = calendarData.filter(day => day.isCompleted).length;
   const totalDays = calendarData.length;
@@ -167,20 +210,22 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
                 {/* Simple calendar grid */}
                 <div className="grid grid-cols-7 gap-1">
                   {calendarData.map((day, index) => (
-                    <div
+                    <button
                       key={index}
+                      onClick={() => toggleDayCompletion(day)}
                       className={`
-                        w-8 h-8 rounded-md text-xs flex items-center justify-center font-medium transition-all
+                        w-8 h-8 rounded-md text-xs flex items-center justify-center font-medium transition-all cursor-pointer
                         ${day.isToday ? 'ring-2 ring-blue-400' : ''}
                         ${day.isCompleted 
                           ? 'bg-green-500 text-white hover:bg-green-600' 
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }
+                        focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50
                       `}
-                      title={`${day.date.toLocaleDateString()} - ${day.isCompleted ? 'Completed ✓' : 'Not completed'}`}
+                      title={`${day.date.toLocaleDateString()} - Click to ${day.isCompleted ? 'mark incomplete' : 'mark complete'}`}
                     >
                       {day.date.getDate()}
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
