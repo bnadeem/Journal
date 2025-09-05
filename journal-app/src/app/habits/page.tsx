@@ -3,18 +3,26 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Habit, HabitStats } from '@/types/journal';
-import HabitCalendar from '@/components/habits/HabitCalendar';
+import UnifiedCalendar from '@/components/habits/UnifiedCalendar';
+import HabitLegend from '@/components/habits/HabitLegend';
+import DayDetailModal from '@/components/habits/DayDetailModal';
+import { HabitCompletion } from '@/components/habits/UnifiedCalendarDay';
+import '@/components/habits/unified-calendar.css';
+import '@/components/habits/habit-legend.css';
+import '@/components/habits/day-detail-modal.css';
 
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitStats, setHabitStats] = useState<Record<string, HabitStats>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [visibleHabits, setVisibleHabits] = useState<string[]>([]);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [newHabit, setNewHabit] = useState({
     name: '',
     description: '',
     category: '',
-    color: 'blue',
+    color: '#3b82f6',
     targetFrequency: 'daily' as 'daily' | 'weekly' | 'monthly',
   });
 
@@ -28,6 +36,9 @@ export default function HabitsPage() {
       if (response.ok) {
         const habitsData = await response.json();
         setHabits(habitsData);
+        
+        // Set all habits as visible by default
+        setVisibleHabits(habitsData.map((h: Habit) => h.id));
         
         // Fetch stats for each habit
         const statsPromises = habitsData.map(async (habit: Habit) => {
@@ -75,7 +86,7 @@ export default function HabitsPage() {
           name: '',
           description: '',
           category: '',
-          color: 'blue',
+          color: '#3b82f6',
           targetFrequency: 'daily',
         });
         fetchHabits();
@@ -83,6 +94,75 @@ export default function HabitsPage() {
     } catch (error) {
       console.error('Error creating habit:', error);
     }
+  };
+
+  const toggleHabitVisibility = (habitId: string) => {
+    setVisibleHabits(prev => 
+      prev.includes(habitId) 
+        ? prev.filter(id => id !== habitId)
+        : [...prev, habitId]
+    );
+  };
+
+  const openHabitEditor = (habitId: string) => {
+    // For now, just show an alert - can implement proper edit modal later
+    const habit = habits.find(h => h.id === habitId);
+    if (habit) {
+      alert(`Edit ${habit.name} - Feature coming soon!`);
+    }
+  };
+
+  const handleDayClick = (date: Date, dayHabits: HabitCompletion[]) => {
+    setSelectedDay(date);
+  };
+
+  const handleToggleHabit = async (habitId: string, date: Date) => {
+    try {
+      const dateString = date.toISOString().split('T')[0];
+      
+      // First, get current status
+      const response = await fetch(`/api/habits/${habitId}/logs?startDate=${dateString}&endDate=${dateString}`);
+      if (!response.ok) throw new Error('Failed to fetch current status');
+      
+      const logs = await response.json();
+      const currentLog = logs.find((log: any) => log.date === dateString);
+      const currentStatus = currentLog?.completed || false;
+      
+      // Toggle the status
+      const updateResponse = await fetch(`/api/habits/${habitId}/logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: dateString,
+          completed: !currentStatus
+        })
+      });
+      
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update habit');
+      }
+    } catch (error) {
+      console.error('Error toggling habit:', error);
+      throw error;
+    }
+  };
+
+  const getHexColor = (colorName: string): string => {
+    const colorMap: Record<string, string> = {
+      blue: '#3b82f6',
+      green: '#10b981',
+      purple: '#8b5cf6',
+      orange: '#f97316',
+      pink: '#ec4899',
+      indigo: '#6366f1',
+      red: '#ef4444',
+      yellow: '#eab308',
+      emerald: '#059669',
+      cyan: '#06b6d4'
+    };
+    return colorMap[colorName] || colorName;
   };
 
   const toggleHabitActive = async (habitId: string, isActive: boolean) => {
@@ -213,18 +293,31 @@ export default function HabitsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Color
                   </label>
-                  <select
-                    value={newHabit.color}
-                    onChange={(e) => setNewHabit({ ...newHabit, color: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
-                  >
-                    <option value="blue">Blue</option>
-                    <option value="green">Green</option>
-                    <option value="purple">Purple</option>
-                    <option value="orange">Orange</option>
-                    <option value="pink">Pink</option>
-                    <option value="indigo">Indigo</option>
-                  </select>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: 'Blue', value: '#3b82f6' },
+                      { name: 'Green', value: '#10b981' },
+                      { name: 'Purple', value: '#8b5cf6' },
+                      { name: 'Orange', value: '#f97316' },
+                      { name: 'Pink', value: '#ec4899' },
+                      { name: 'Indigo', value: '#6366f1' },
+                      { name: 'Red', value: '#ef4444' },
+                      { name: 'Yellow', value: '#eab308' },
+                      { name: 'Emerald', value: '#059669' },
+                      { name: 'Cyan', value: '#06b6d4' }
+                    ].map(color => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        onClick={() => setNewHabit({ ...newHabit, color: color.value })}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          newHabit.color === color.value ? 'border-gray-800 scale-110' : 'border-gray-300'
+                        }`}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 <div>
@@ -261,7 +354,7 @@ export default function HabitsPage() {
             </div>
           )}
 
-          {/* Habits List */}
+          {/* Compact Habits Overview */}
           {habits.length === 0 ? (
             <div className="bg-white/90 backdrop-blur rounded-lg shadow-xl border border-gray-200 p-12 text-center">
               <div className="w-20 h-20 mx-auto mb-6 text-gray-400">
@@ -280,86 +373,102 @@ export default function HabitsPage() {
               </button>
             </div>
           ) : (
-            <div className="grid gap-6">
-              {habits.map((habit) => {
-                const stats = habitStats[habit.id];
-                return (
-                  <div
-                    key={habit.id}
-                    className="bg-white/90 backdrop-blur rounded-lg shadow-xl border border-gray-200 p-6"
-                  >
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-xl font-semibold text-gray-900">{habit.name}</h3>
-                          {habit.category && (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getColorClasses(habit.color || 'blue')}`}>
-                              {habit.category}
-                            </span>
-                          )}
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            habit.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            {habit.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                        
-                        {habit.description && (
-                          <p className="text-gray-600 mb-4">{habit.description}</p>
-                        )}
-
-                        {stats && (
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                              <div className="font-semibold text-gray-900">{stats.completionRate.toFixed(1)}%</div>
-                              <div className="text-gray-600">Success Rate</div>
-                            </div>
-                            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                              <div className="font-semibold text-gray-900">{stats.streak}</div>
-                              <div className="text-gray-600">Current Streak</div>
-                            </div>
-                            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                              <div className="font-semibold text-gray-900">{stats.bestStreak}</div>
-                              <div className="text-gray-600">Best Streak</div>
-                            </div>
-                            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                              <div className="font-semibold text-gray-900">{stats.completedDays}</div>
-                              <div className="text-gray-600">Completed</div>
-                            </div>
-                            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                              <div className="font-semibold text-gray-900">{stats.totalDays}</div>
-                              <div className="text-gray-600">Total Days</div>
-                            </div>
+            <>
+              {/* Compact Habit Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                {habits.map((habit) => {
+                  const stats = habitStats[habit.id];
+                  return (
+                    <div
+                      key={habit.id}
+                      className="bg-white/90 backdrop-blur rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div 
+                            className="w-4 h-4 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: getHexColor(habit.color || '#3b82f6') }}
+                          />
+                          <div>
+                            <h4 className="font-medium text-gray-900 text-sm">{habit.name}</h4>
+                            {habit.category && (
+                              <span className="text-xs text-gray-500">{habit.category}</span>
+                            )}
                           </div>
-                        )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => toggleHabitActive(habit.id, !habit.isActive)}
+                            className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                              habit.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                            }`}
+                          >
+                            {habit.isActive ? 'Active' : 'Inactive'}
+                          </button>
+                          <button
+                            onClick={() => deleteHabit(habit.id)}
+                            className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
-
-                      <div className="flex items-center space-x-2 ml-4">
-                        <button
-                          onClick={() => toggleHabitActive(habit.id, !habit.isActive)}
-                          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                            habit.isActive
-                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                              : 'bg-green-100 text-green-800 hover:bg-green-200'
-                          }`}
-                        >
-                          {habit.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          onClick={() => deleteHabit(habit.id)}
-                          className="px-3 py-1 bg-red-100 text-red-800 rounded-md text-sm font-medium hover:bg-red-200 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      
+                      {stats && (
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="text-center p-2 bg-gray-50 rounded">
+                            <div className="font-semibold text-gray-900">{stats.streak}</div>
+                            <div className="text-gray-600 text-xs">Streak</div>
+                          </div>
+                          <div className="text-center p-2 bg-gray-50 rounded">
+                            <div className="font-semibold text-gray-900">{stats.bestStreak}</div>
+                            <div className="text-gray-600 text-xs">Best</div>
+                          </div>
+                          <div className="text-center p-2 bg-gray-50 rounded">
+                            <div className="font-semibold text-gray-900">{stats.completionRate.toFixed(0)}%</div>
+                            <div className="text-gray-600 text-xs">Rate</div>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* Activity Calendar */}
-                    <HabitCalendar habit={habit} />
+              {/* Habit Legend */}
+              <HabitLegend
+                habits={habits.map(h => ({ ...h, color: getHexColor(h.color || '#3b82f6') }))}
+                visibleHabits={visibleHabits}
+                onToggleHabit={toggleHabitVisibility}
+                onEditHabit={openHabitEditor}
+                onAddHabit={() => setShowCreateForm(true)}
+              />
+
+              {/* Unified Calendar */}
+              <div className="bg-white/90 backdrop-blur rounded-lg shadow-xl border border-gray-200 p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Activity Overview - Last 3 Months</h2>
+                  <div className="text-sm text-gray-600">
+                    Showing {visibleHabits.length} of {habits.length} habits
                   </div>
-                );
-              })}
-            </div>
+                </div>
+                <UnifiedCalendar
+                  habits={habits.map(h => ({ ...h, color: getHexColor(h.color || '#3b82f6') }))}
+                  visibleHabits={visibleHabits}
+                  onDayClick={handleDayClick}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Day Detail Modal */}
+          {selectedDay && (
+            <DayDetailModal
+              date={selectedDay}
+              habits={habits.map(h => ({ ...h, color: getHexColor(h.color || '#3b82f6') }))}
+              onClose={() => setSelectedDay(null)}
+              onToggleHabit={handleToggleHabit}
+            />
           )}
         </div>
       </div>

@@ -8,5 +8,15 @@
     "isActive": true,
     "id": "2025-09-05T16:16:24.893Z-habit-0.11891766378781177",
     "createdAt": "2025-09-05T16:16:24.893Z"
+  },
+  {
+    "name": "Submit Timesheet",
+    "description": "",
+    "category": "Consistentcy",
+    "color": "#eab308",
+    "targetFrequency": "daily",
+    "isActive": true,
+    "id": "2025-09-05T20:34:49.444Z-habit-0.47966603253223417",
+    "createdAt": "2025-09-05T20:34:49.444Z"
   }
 ]

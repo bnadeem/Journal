@@ -1,0 +1,317 @@
+/* Habit Legend Styles */
+.habit-legend {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.legend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.legend-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.add-habit-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 200ms ease;
+}
+
+.add-habit-btn:hover {
+  background: #2563eb;
+}
+
+/* Loading State */
+.legend-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* No Habits State */
+.no-habits {
+  text-align: center;
+  padding: 32px 16px;
+  color: #6b7280;
+}
+
+.no-habits p {
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.create-first-habit-btn {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 200ms ease;
+}
+
+.create-first-habit-btn:hover {
+  background: #059669;
+}
+
+/* Legend Items */
+.legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f9fafb;
+  transition: opacity 200ms ease;
+}
+
+.legend-item:last-child {
+  border-bottom: none;
+}
+
+.legend-item.hidden {
+  opacity: 0.4;
+}
+
+.legend-item.hidden .legend-color {
+  background-color: #d1d5db !important;
+}
+
+/* Visibility Toggle */
+.visibility-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 200ms ease;
+  flex: 1;
+  text-align: left;
+}
+
+.visibility-toggle:hover {
+  background-color: #f9fafb;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+.habit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.legend-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  line-height: 1.2;
+}
+
+.habit-category {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+/* Legend Stats */
+.legend-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #6b7280;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.today-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.today-status.completed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.today-status.incomplete {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Edit Button */
+.edit-habit-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 200ms ease;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.edit-habit-btn:hover {
+  background-color: #f3f4f6;
+  opacity: 1;
+}
+
+/* Legend Summary */
+.legend-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.visible-count {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.show-all-btn {
+  background: none;
+  border: 1px solid #d1d5db;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.show-all-btn:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .habit-legend {
+    padding: 16px;
+  }
+  
+  .legend-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .legend-header h4 {
+    text-align: center;
+  }
+  
+  .add-habit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .legend-item {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    padding: 16px 0;
+  }
+  
+  .visibility-toggle {
+    justify-content: flex-start;
+  }
+  
+  .legend-stats {
+    justify-content: space-around;
+    padding: 8px 0;
+    background-color: #f9fafb;
+    border-radius: 6px;
+  }
+  
+  .edit-habit-btn {
+    align-self: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .legend-stats {
+    gap: 12px;
+  }
+  
+  .stat-item {
+    gap: 4px;
+  }
+  
+  .stat-value {
+    font-size: 16px;
+  }
+  
+  .stat-label {
+    font-size: 11px;
+  }
+}
