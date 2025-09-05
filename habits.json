@@ -18,5 +18,15 @@
     "isActive": true,
     "id": "2025-09-05T20:34:49.444Z-habit-0.47966603253223417",
     "createdAt": "2025-09-05T20:34:49.444Z"
+  },
+  {
+    "name": "Execute on Something you Commit To",
+    "description": "dependability",
+    "category": "Consistentcy",
+    "color": "#f97316",
+    "targetFrequency": "daily",
+    "isActive": true,
+    "id": "2025-09-05T21:51:55.902Z-habit-0.942173555441352",
+    "createdAt": "2025-09-05T21:51:55.902Z"
   }
 ]

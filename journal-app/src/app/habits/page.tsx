@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Habit, HabitStats } from '@/types/journal';
+import { Habit, HabitStats, HabitLog } from '@/types/journal';
 import UnifiedCalendar from '@/components/habits/UnifiedCalendar';
 import HabitLegend from '@/components/habits/HabitLegend';
 import DayDetailModal from '@/components/habits/DayDetailModal';
 import { HabitCompletion } from '@/components/habits/UnifiedCalendarDay';
+import { calculateHabitPermanence, getHabitStatusMessage, getNextMilestone, HABIT_FORMATION_STAGES } from '@/lib/habit-permanence';
 import '@/components/habits/unified-calendar.css';
 import '@/components/habits/habit-legend.css';
 import '@/components/habits/day-detail-modal.css';
@@ -14,6 +15,7 @@ import '@/components/habits/day-detail-modal.css';
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitStats, setHabitStats] = useState<Record<string, HabitStats>>({});
+  const [habitPermanence, setHabitPermanence] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [visibleHabits, setVisibleHabits] = useState<string[]>([]);
@@ -62,6 +64,34 @@ export default function HabitsPage() {
           }
         });
         setHabitStats(statsMap);
+        
+        // Calculate habit permanence metrics for each habit
+        const permanencePromises = habitsData.map(async (habit: Habit) => {
+          try {
+            // Fetch full log history for permanence calculation
+            const startDate = new Date(habit.createdAt || habit.id).toISOString().split('T')[0];
+            const endDate = new Date().toISOString().split('T')[0];
+            
+            const logsResponse = await fetch(`/api/habits/${habit.id}/logs?startDate=${startDate}&endDate=${endDate}`);
+            if (logsResponse.ok) {
+              const logs = await logsResponse.json();
+              const permanenceMetrics = calculateHabitPermanence(logs, new Date(habit.createdAt || habit.id));
+              return { habitId: habit.id, permanence: permanenceMetrics };
+            }
+          } catch (error) {
+            console.error(`Error calculating permanence for habit ${habit.id}:`, error);
+          }
+          return { habitId: habit.id, permanence: null };
+        });
+        
+        const permanenceResults = await Promise.all(permanencePromises);
+        const permanenceMap: Record<string, any> = {};
+        permanenceResults.forEach(({ habitId, permanence }) => {
+          if (permanence) {
+            permanenceMap[habitId] = permanence;
+          }
+        });
+        setHabitPermanence(permanenceMap);
       }
     } catch (error) {
       console.error('Error fetching habits:', error);
@@ -252,19 +282,17 @@ export default function HabitsPage() {
             </div>
           </div>
 
-          {/* Summary Stats Cards */}
+          {/* Science-Based Summary Stats */}
           {habits.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+                    <span className="text-xl">🌱</span>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">{habits.filter(h => h.isActive).length}</p>
-                    <p className="text-gray-600 text-sm">Active Habits</p>
+                    <p className="text-gray-600 text-sm">Habits in Formation</p>
                   </div>
                 </div>
               </div>
@@ -272,15 +300,15 @@ export default function HabitsPage() {
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-green-100 rounded-lg">
-                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
+                    <span className="text-xl">🧠</span>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {Math.round(Object.values(habitStats).reduce((acc, stat) => acc + stat.completionRate, 0) / Math.max(Object.values(habitStats).length, 1))}%
+                      {Object.values(habitPermanence).length > 0 
+                        ? Math.round(Object.values(habitPermanence).reduce((acc: number, perm: any) => acc + (perm?.automaticityScore || 0), 0) / Object.values(habitPermanence).length)
+                        : 0}%
                     </p>
-                    <p className="text-gray-600 text-sm">Completion Rate</p>
+                    <p className="text-gray-600 text-sm">Avg Automaticity</p>
                   </div>
                 </div>
               </div>
@@ -288,15 +316,13 @@ export default function HabitsPage() {
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-purple-100 rounded-lg">
-                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <span className="text-xl">🏆</span>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-gray-900">
-                      {Math.max(...Object.values(habitStats).map(stat => stat.streak), 0)}
+                      {Object.values(habitPermanence).filter((perm: any) => perm?.permanenceStage === 'automatic').length}
                     </p>
-                    <p className="text-gray-600 text-sm">Best Streak</p>
+                    <p className="text-gray-600 text-sm">Permanent Habits</p>
                   </div>
                 </div>
               </div>
@@ -432,11 +458,15 @@ export default function HabitsPage() {
             </div>
           ) : (
             <>
-              {/* Modern Habit Cards */}
+              {/* Science-Based Habit Formation Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 {habits.map((habit) => {
                   const stats = habitStats[habit.id];
-                  const completionPercentage = stats ? Math.round(stats.completionRate) : 0;
+                  const permanence = habitPermanence[habit.id];
+                  const currentStage = permanence ? HABIT_FORMATION_STAGES.find(s => s.name.toLowerCase() === permanence.permanenceStage) || HABIT_FORMATION_STAGES[0] : HABIT_FORMATION_STAGES[0];
+                  const statusMessage = permanence ? getHabitStatusMessage(permanence) : 'Calculating permanence...';
+                  const nextMilestone = permanence ? getNextMilestone(permanence) : null;
+                  
                   return (
                     <div
                       key={habit.id}
@@ -471,47 +501,78 @@ export default function HabitsPage() {
                         </div>
                       </div>
                       
-                      {stats && (
-                        <>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-4 text-sm">
-                              <span className="flex items-center space-x-1">
-                                <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                                <span className="text-gray-600">{stats.streak}</span>
-                              </span>
-                              <span className="flex items-center space-x-1">
-                                <div 
-                                  className="w-2 h-2 rounded-full"
-                                  style={{ backgroundColor: getHexColor(habit.color || '#3b82f6') }}
-                                ></div>
-                                <span className="text-gray-600">{stats.bestStreak}</span>
-                              </span>
-                              <span className="font-semibold text-gray-900">{completionPercentage}%</span>
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              {stats.completedDays}/{stats.totalDays}
+                      {/* Science-Based Formation Stage */}
+                      {permanence ? (
+                        <div className="mb-4">
+                          <div className="flex items-center space-x-3 mb-3">
+                            <span className="text-2xl">{currentStage.icon}</span>
+                            <div>
+                              <h4 className="font-semibold text-gray-900" style={{ color: currentStage.color }}>
+                                {currentStage.name} Phase
+                              </h4>
+                              <p className="text-sm text-gray-600">{currentStage.description}</p>
                             </div>
                           </div>
                           
-                          {/* Progress Bar */}
-                          <div className="mb-4">
-                            <div className="text-xs text-gray-600 mb-2">Progress</div>
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                          {/* Formation Progress Bar */}
+                          <div className="mb-3">
+                            <div className="flex justify-between text-xs text-gray-600 mb-1">
+                              <span>Formation Progress</span>
+                              <span>{Math.round(permanence.permanencePercentage)}% toward permanent</span>
+                            </div>
+                            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                               <div 
-                                className="h-full transition-all duration-500 ease-out"
+                                className="h-full transition-all duration-700 ease-out rounded-full"
                                 style={{ 
-                                  width: `${completionPercentage}%`,
-                                  backgroundColor: getHexColor(habit.color || '#3b82f6')
+                                  width: `${permanence.permanencePercentage}%`,
+                                  backgroundColor: currentStage.color
                                 }}
                               />
                             </div>
-                            <div className="flex justify-between text-xs text-gray-500 mt-1">
-                              <span>Current: {stats.streak}</span>
-                              <span>Goal: {stats.bestStreak}</span>
-                              <span>{completionPercentage}% Done</span>
+                          </div>
+                          
+                          {/* Status Message */}
+                          <div className="text-sm text-gray-700 mb-2">
+                            {statusMessage}
+                          </div>
+                          
+                          {/* Next Milestone */}
+                          {nextMilestone && nextMilestone.daysUntil > 0 && (
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              <div className="text-xs text-gray-600 mb-1">Next Milestone</div>
+                              <div className="font-medium text-gray-900">{nextMilestone.milestone}</div>
+                              <div className="text-sm text-gray-600">
+                                ~{nextMilestone.daysUntil} days: {nextMilestone.encouragement}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Automaticity & Resilience Metrics */}
+                          <div className="grid grid-cols-3 gap-3 mt-4">
+                            <div className="text-center">
+                              <div className="text-lg font-bold text-gray-900">
+                                {Math.round(permanence.automaticityScore)}%
+                              </div>
+                              <div className="text-xs text-gray-500">Automaticity</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-lg font-bold text-gray-900">
+                                Day {permanence.daysSinceStart}
+                              </div>
+                              <div className="text-xs text-gray-500">Formation</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-lg font-bold" style={{ color: currentStage.color }}>
+                                {permanence.strengthLevel}
+                              </div>
+                              <div className="text-xs text-gray-500">Strength</div>
                             </div>
                           </div>
-                        </>
+                        </div>
+                      ) : (
+                        <div className="text-center text-gray-500 py-8">
+                          Calculating habit formation metrics...
+                        </div>
                       )}
                     </div>
                   );
@@ -571,55 +632,47 @@ export default function HabitsPage() {
                   />
                 </div>
                 
-                {/* Bottom Statistics */}
+                {/* Science-Based Formation Insights */}
                 <div className="px-6 pb-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-blue-50 rounded-lg p-4 text-center">
-                      <div className="p-2 bg-blue-100 rounded-lg inline-flex mb-2">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
+                    <div className="bg-red-50 rounded-lg p-4 text-center">
+                      <div className="p-2 bg-red-100 rounded-lg inline-flex mb-2">
+                        <span className="text-lg">🌱</span>
                       </div>
                       <p className="text-2xl font-bold text-gray-900">
-                        {Object.values(habitStats).reduce((acc, stat) => acc + stat.completedDays, 0)}
+                        {Object.values(habitPermanence).filter((perm: any) => perm?.permanenceStage === 'initiation').length}
                       </p>
-                      <p className="text-gray-600 text-sm">Active Days</p>
+                      <p className="text-gray-600 text-sm">Initiation Phase</p>
+                    </div>
+                    
+                    <div className="bg-yellow-50 rounded-lg p-4 text-center">
+                      <div className="p-2 bg-yellow-100 rounded-lg inline-flex mb-2">
+                        <span className="text-lg">🌿</span>
+                      </div>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {Object.values(habitPermanence).filter((perm: any) => perm?.permanenceStage === 'development').length}
+                      </p>
+                      <p className="text-gray-600 text-sm">Neural Development</p>
                     </div>
                     
                     <div className="bg-green-50 rounded-lg p-4 text-center">
                       <div className="p-2 bg-green-100 rounded-lg inline-flex mb-2">
-                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
+                        <span className="text-lg">🌳</span>
                       </div>
                       <p className="text-2xl font-bold text-gray-900">
-                        {Math.max(...Object.values(habitStats).map(stat => stat.streak), 0)}
+                        {Object.values(habitPermanence).filter((perm: any) => perm?.permanenceStage === 'stabilization').length}
                       </p>
-                      <p className="text-gray-600 text-sm">Current Streak</p>
+                      <p className="text-gray-600 text-sm">Stabilizing</p>
                     </div>
                     
                     <div className="bg-purple-50 rounded-lg p-4 text-center">
                       <div className="p-2 bg-purple-100 rounded-lg inline-flex mb-2">
-                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <span className="text-lg">🏆</span>
                       </div>
                       <p className="text-2xl font-bold text-gray-900">
-                        {Math.max(...Object.values(habitStats).map(stat => stat.bestStreak), 0)}
+                        {Object.values(habitPermanence).filter((perm: any) => perm?.permanenceStage === 'automatic').length}
                       </p>
-                      <p className="text-gray-600 text-sm">Longest Streak</p>
-                    </div>
-                    
-                    <div className="bg-orange-50 rounded-lg p-4 text-center">
-                      <div className="p-2 bg-orange-100 rounded-lg inline-flex mb-2">
-                        <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {habits.length > 0 ? (Object.values(habitStats).reduce((acc, stat) => acc + stat.completedDays, 0) / habits.length).toFixed(1) : '0'}
-                      </p>
-                      <p className="text-gray-600 text-sm">Daily Average</p>
+                      <p className="text-gray-600 text-sm">Automatic Habits</p>
                     </div>
                   </div>
                 </div>
