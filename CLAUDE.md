@@ -54,9 +54,12 @@ This is a personal journal repository with both markdown entries and a Next.js w
 
 ### Habit Tracking
 - **Habit Management**: Create, edit, and deactivate habits with categories and colors
-- **Progress Tracking**: Visual calendar showing completion status for each habit
-- **Statistics**: Completion rates, streak tracking, and performance metrics
+- **Collapsible Calendar**: Visual calendar with expand/collapse functionality for better UX
+- **Day Labels**: Calendar displays proper day headers (S, M, T, W, T, F, S) for easy navigation
+- **Progress Tracking**: Color-coded completion status with hover tooltips and today highlighting
+- **Statistics**: Real-time completion rates, streak tracking, and performance metrics
 - **Flexible Frequency**: Support for daily, weekly, and monthly habit targets
+- **Performance Optimized**: Efficient API calls that only load data when calendar is expanded
 
 ### API Routes
 - `GET/POST/PUT /api/entries/[...slug]`: CRUD operations for journal entries
@@ -95,5 +98,16 @@ The web application uses modern React/Next.js stack:
 
 ### Habit System
 - Habits are stored in `habits.json` with logs tracked separately  
+- Habit completion data stored in `YYYY/MMM/DD-habits.json` files per day
+- Calendar component (`HabitCalendar.tsx`) uses collapsible design pattern
+- API route `/api/habits/[habitId]/logs` optimized for date range queries
+- Form inputs have proper text styling (`text-gray-900`, `placeholder-gray-500`)
 - Use the established API patterns for creating new habit-related features
 - Maintain data consistency between the JSON storage and UI state
+
+### Recent Improvements (September 2025)
+- **Enhanced Calendar UX**: Added collapsible habit calendars with day headers
+- **Performance Optimization**: API calls only execute when calendar is expanded
+- **Better Form Styling**: Fixed text color issues in habit creation forms
+- **Error Handling**: Improved loading states and error messages
+- **Visual Design**: Added proper day labels and today highlighting

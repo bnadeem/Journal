@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Habit, HabitLog } from '@/types/journal';
 
 interface HabitCalendarProps {
@@ -93,24 +93,6 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
     return days[dayIndex];
   };
 
-  const organizeIntoWeeks = () => {
-    if (calendarData.length === 0) return [];
-    
-    const weeks: CalendarDay[][] = [];
-    let currentWeek: CalendarDay[] = [];
-    
-    calendarData.forEach((day, index) => {
-      currentWeek.push(day);
-      
-      // If it's Sunday (6) or the last day, complete the week
-      if (day.date.getDay() === 6 || index === calendarData.length - 1) {
-        weeks.push([...currentWeek]);
-        currentWeek = [];
-      }
-    });
-    
-    return weeks;
-  };
 
   const completedDays = calendarData.filter(day => day.isCompleted).length;
   const totalDays = calendarData.length;
