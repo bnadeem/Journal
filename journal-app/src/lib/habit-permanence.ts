@@ -150,6 +150,16 @@ export const calculateHabitPermanence = (logs: HabitLog[], startDate: Date): Hab
     permanencePercentage = Math.min(timeProgress + performanceBonus, 95);
   }
   
+  // Debug logging for specific habits
+  if (logs.filter(log => log.completed).length > 0) {
+    console.log(`Habit permanence calculation:
+      Days since start: ${daysSinceStart}
+      Time progress: ${daysSinceStart >= 154 ? 'N/A' : ((daysSinceStart / 154) * 70).toFixed(1)}%
+      Performance bonus: ${daysSinceStart >= 154 ? 'N/A' : ((automaticityScore / 100) * 30).toFixed(1)}%
+      Final permanence: ${permanencePercentage.toFixed(1)}%
+      Automaticity score: ${automaticityScore.toFixed(1)}%`);
+  }
+  
   // Determine strength level
   let strengthLevel: HabitPermanenceMetrics['strengthLevel'] = 'weak';
   if (automaticityScore >= 80) strengthLevel = 'automatic';
@@ -275,4 +285,129 @@ export const calculateHabitResilience = (metrics: HabitPermanenceMetrics): {
   }
   
   return { resilience, description };
+};
+
+export interface HabitRiskAssessment {
+  riskLevel: 'safe' | 'caution' | 'warning' | 'critical';
+  consecutiveMissedDays: number;
+  daysSinceLastCompletion: number;
+  regressionRisk: number; // 0-100
+  interventionMessage: string;
+  urgencyScore: number; // 0-100, for visual prominence
+}
+
+/**
+ * Assess habit risk based on missed days and formation stage
+ * Research-based: Early stages more vulnerable, consecutive misses compound risk
+ */
+export const assessHabitRisk = (logs: HabitLog[], metrics: HabitPermanenceMetrics): HabitRiskAssessment => {
+  if (!logs || logs.length === 0) {
+    return {
+      riskLevel: 'safe',
+      consecutiveMissedDays: 0,
+      daysSinceLastCompletion: 0,
+      regressionRisk: 0,
+      interventionMessage: 'No data yet - start tracking today!',
+      urgencyScore: 0
+    };
+  }
+
+  const today = new Date();
+  const sortedLogs = [...logs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  
+  // Calculate consecutive missed days from today backwards
+  let consecutiveMissedDays = 0;
+  let daysSinceLastCompletion = 0;
+  
+  // Check today and work backwards
+  for (let i = 0; i < 14; i++) { // Check last 14 days max
+    const checkDate = new Date(today);
+    checkDate.setDate(today.getDate() - i);
+    const dateStr = checkDate.toISOString().split('T')[0];
+    
+    const logEntry = sortedLogs.find(log => log.date === dateStr);
+    
+    if (logEntry?.completed) {
+      daysSinceLastCompletion = i;
+      break;
+    } else if (i === 0 || logEntry) {
+      // Count as missed if today or if we have a log entry marked incomplete
+      consecutiveMissedDays++;
+      daysSinceLastCompletion++;
+    }
+  }
+
+  // Stage-based risk factors (early stages more vulnerable)
+  const { permanenceStage, automaticityScore } = metrics;
+  
+  let baseRiskMultiplier = 1.0;
+  switch (permanenceStage) {
+    case 'initiation':
+      baseRiskMultiplier = 2.5; // Most fragile
+      break;
+    case 'development':
+      baseRiskMultiplier = 1.8; // Still vulnerable
+      break;
+    case 'stabilization':
+      baseRiskMultiplier = 1.2; // More resilient
+      break;
+    case 'automatic':
+      baseRiskMultiplier = 0.6; // Highly resilient
+      break;
+  }
+
+  // Calculate regression risk (research: single miss = minimal impact, consecutive misses = compound)
+  let regressionRisk = 0;
+  if (consecutiveMissedDays === 1) {
+    regressionRisk = 15 * baseRiskMultiplier; // Single miss - minimal according to research
+  } else if (consecutiveMissedDays === 2) {
+    regressionRisk = 35 * baseRiskMultiplier; // Two misses - moderate concern
+  } else if (consecutiveMissedDays >= 3) {
+    // Research: consecutive misses weaken context-dependent links progressively
+    regressionRisk = Math.min(20 + (consecutiveMissedDays * 15), 85) * baseRiskMultiplier;
+  }
+  
+  // Adjust for automaticity strength (stronger habits more resilient)
+  const automacityFactor = Math.max(0.3, 1 - (automaticityScore / 100) * 0.7);
+  regressionRisk = Math.min(regressionRisk * automacityFactor, 100);
+
+  // Determine risk level and intervention messages
+  let riskLevel: HabitRiskAssessment['riskLevel'] = 'safe';
+  let interventionMessage = '';
+  let urgencyScore = 0;
+
+  if (regressionRisk >= 75) {
+    riskLevel = 'critical';
+    urgencyScore = 95;
+    interventionMessage = permanenceStage === 'initiation' 
+      ? `🚨 Critical: ${consecutiveMissedDays} missed days in formation stage. Neural pathways weakening - act TODAY!`
+      : `🚨 Critical: ${consecutiveMissedDays} consecutive misses. Context-dependent links severely weakened.`;
+  } else if (regressionRisk >= 50) {
+    riskLevel = 'warning';
+    urgencyScore = 75;
+    interventionMessage = permanenceStage === 'initiation'
+      ? `⚠️ Warning: ${consecutiveMissedDays} missed days during vulnerable formation period. Recovery needed.`
+      : `⚠️ Warning: ${consecutiveMissedDays} consecutive misses. Mental associations weakening.`;
+  } else if (regressionRisk >= 25) {
+    riskLevel = 'caution';
+    urgencyScore = 45;
+    interventionMessage = consecutiveMissedDays >= 2
+      ? `⚡ Caution: Pattern disruption detected. Resume today to maintain momentum.`
+      : `💪 Back on track opportunity - one miss won't hurt if you restart now.`;
+  } else {
+    riskLevel = 'safe';
+    urgencyScore = 10;
+    interventionMessage = daysSinceLastCompletion === 0 
+      ? '✅ Great consistency! Neural pathways strengthening.'
+      : '🎯 Good momentum - occasional misses are normal according to research.';
+  }
+
+  return {
+    riskLevel,
+    consecutiveMissedDays,
+    daysSinceLastCompletion,
+    regressionRisk: Math.round(regressionRisk),
+    interventionMessage,
+    urgencyScore: Math.round(urgencyScore)
+  };
 };

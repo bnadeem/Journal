@@ -8,7 +8,7 @@ import HabitLegend from '@/components/habits/HabitLegend';
 import DayDetailModal from '@/components/habits/DayDetailModal';
 import HabitEditModal from '@/components/habits/HabitEditModal';
 import { HabitCompletion } from '@/components/habits/UnifiedCalendarDay';
-import { calculateHabitPermanence, getHabitStatusMessage, getNextMilestone, HABIT_FORMATION_STAGES } from '@/lib/habit-permanence';
+import { calculateHabitPermanence, getHabitStatusMessage, getNextMilestone, HABIT_FORMATION_STAGES, assessHabitRisk, HabitRiskAssessment } from '@/lib/habit-permanence';
 import '@/components/habits/unified-calendar.css';
 import '@/components/habits/habit-legend.css';
 import '@/components/habits/day-detail-modal.css';
@@ -17,6 +17,7 @@ export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [habitStats, setHabitStats] = useState<Record<string, HabitStats>>({});
   const [habitPermanence, setHabitPermanence] = useState<Record<string, any>>({});
+  const [habitRisks, setHabitRisks] = useState<Record<string, HabitRiskAssessment>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [visibleHabits, setVisibleHabits] = useState<string[]>([]);
@@ -126,11 +127,35 @@ export default function HabitsPage() {
         
         const permanenceResults = await Promise.all(permanencePromises);
         const permanenceMap: Record<string, any> = {};
+        const riskMap: Record<string, HabitRiskAssessment> = {};
+        
         permanenceResults.forEach(({ habitId, permanence }) => {
           if (permanence) {
             permanenceMap[habitId] = permanence;
+            
+            // Calculate risk assessment for each habit
+            const habit = habitsData.find((h: Habit) => h.id === habitId);
+            if (habit) {
+              // Get the logs for risk assessment
+              const createdDate = new Date(habit.createdAt || habit.id);
+              const earlierStartDate = new Date(createdDate);
+              earlierStartDate.setMonth(createdDate.getMonth() - 2);
+              
+              const startDate = earlierStartDate.toISOString().split('T')[0];
+              const endDate = new Date().toISOString().split('T')[0];
+              
+              // Use cached logs from permanence calculation if available
+              fetch(`/api/habits/${habitId}/logs?startDate=${startDate}&endDate=${endDate}`)
+                .then(res => res.json())
+                .then(logs => {
+                  const risk = assessHabitRisk(logs, permanence);
+                  setHabitRisks(prev => ({ ...prev, [habitId]: risk }));
+                })
+                .catch(err => console.error(`Error assessing risk for habit ${habitId}:`, err));
+            }
           }
         });
+        
         setHabitPermanence(permanenceMap);
       }
     } catch (error) {
@@ -233,6 +258,9 @@ export default function HabitsPage() {
       if (!updateResponse.ok) {
         throw new Error('Failed to update habit');
       }
+      
+      // Refresh habit data to update risk assessments
+      fetchHabits();
     } catch (error) {
       console.error('Error toggling habit:', error);
       throw error;
@@ -342,9 +370,102 @@ export default function HabitsPage() {
             </div>
           </div>
 
+          {/* Progressive Risk Alert System */}
+          {Object.values(habitRisks).some((risk) => risk.riskLevel !== 'safe') && (
+            <div className="mb-8">
+              {Object.entries(habitRisks)
+                .filter(([_, risk]) => risk.riskLevel !== 'safe')
+                .sort(([,a], [,b]) => b.urgencyScore - a.urgencyScore) // Sort by urgency
+                .map(([habitId, risk]) => {
+                  const habit = habits.find(h => h.id === habitId);
+                  if (!habit) return null;
+                  
+                  const getAlertStyles = (riskLevel: string, urgencyScore: number) => {
+                    switch (riskLevel) {
+                      case 'critical':
+                        return {
+                          bg: 'bg-red-50 border-2 border-red-200',
+                          icon: '🚨',
+                          iconBg: 'bg-red-100 text-red-800',
+                          text: 'text-red-800',
+                          button: 'bg-red-600 hover:bg-red-700 text-white animate-pulse',
+                          animation: 'animate-bounce'
+                        };
+                      case 'warning':
+                        return {
+                          bg: 'bg-orange-50 border-2 border-orange-200',
+                          icon: '⚠️',
+                          iconBg: 'bg-orange-100 text-orange-800',
+                          text: 'text-orange-800',
+                          button: 'bg-orange-600 hover:bg-orange-700 text-white',
+                          animation: 'animate-pulse'
+                        };
+                      default: // caution
+                        return {
+                          bg: 'bg-yellow-50 border border-yellow-200',
+                          icon: '⚡',
+                          iconBg: 'bg-yellow-100 text-yellow-800',
+                          text: 'text-yellow-800',
+                          button: 'bg-yellow-600 hover:bg-yellow-700 text-white',
+                          animation: ''
+                        };
+                    }
+                  };
+                  
+                  const alertStyles = getAlertStyles(risk.riskLevel, risk.urgencyScore);
+                  
+                  return (
+                    <div 
+                      key={habitId}
+                      className={`${alertStyles.bg} rounded-xl p-6 shadow-md mb-4 ${alertStyles.animation}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className={`p-3 ${alertStyles.iconBg} rounded-lg text-xl`}>
+                            {alertStyles.icon}
+                          </div>
+                          <div>
+                            <h3 className={`font-semibold text-lg ${alertStyles.text}`}>
+                              {habit.name} - Formation at Risk
+                            </h3>
+                            <p className={`text-sm ${alertStyles.text} mb-2`}>
+                              {risk.interventionMessage}
+                            </p>
+                            <div className="flex items-center space-x-4 text-sm">
+                              <span className={alertStyles.text}>
+                                💪 Regression Risk: {risk.regressionRisk}%
+                              </span>
+                              <span className={alertStyles.text}>
+                                ⏱️ Days Since Last: {risk.daysSinceLastCompletion}
+                              </span>
+                              {risk.consecutiveMissedDays > 0 && (
+                                <span className={alertStyles.text}>
+                                  📉 Consecutive Misses: {risk.consecutiveMissedDays}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // Mark today as complete
+                            const today = new Date();
+                            handleToggleHabit(habitId, today);
+                          }}
+                          className={`px-6 py-3 rounded-lg font-medium transition-all ${alertStyles.button} shadow-lg`}
+                        >
+                          {risk.riskLevel === 'critical' ? 'RESCUE NOW!' : 'Complete Today'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
           {/* Science-Based Summary Stats */}
           {habits.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -383,6 +504,35 @@ export default function HabitsPage() {
                       {Object.values(habitPermanence).filter((perm: any) => perm?.permanenceStage === 'automatic').length}
                     </p>
                     <p className="text-gray-600 text-sm">Permanent Habits</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${
+                    Object.values(habitRisks).some(risk => risk?.riskLevel === 'critical' || risk?.riskLevel === 'warning')
+                      ? 'bg-red-100' 
+                      : Object.values(habitRisks).some(risk => risk?.riskLevel === 'caution')
+                      ? 'bg-yellow-100'
+                      : 'bg-green-100'
+                  }`}>
+                    <span className="text-xl">
+                      {Object.values(habitRisks).some(risk => risk?.riskLevel === 'critical') 
+                        ? '🚨' 
+                        : Object.values(habitRisks).some(risk => risk?.riskLevel === 'warning')
+                        ? '⚠️'
+                        : Object.values(habitRisks).some(risk => risk?.riskLevel === 'caution')
+                        ? '⚡'
+                        : '✅'
+                      }
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {Object.values(habitRisks).filter(risk => risk?.riskLevel !== 'safe').length}
+                    </p>
+                    <p className="text-gray-600 text-sm">Habits Needing Attention</p>
                   </div>
                 </div>
               </div>
@@ -523,14 +673,29 @@ export default function HabitsPage() {
                 {habits.map((habit) => {
                   const stats = habitStats[habit.id];
                   const permanence = habitPermanence[habit.id];
+                  const risk = habitRisks[habit.id];
                   const currentStage = permanence ? HABIT_FORMATION_STAGES.find(s => s.name.toLowerCase() === permanence.permanenceStage) || HABIT_FORMATION_STAGES[0] : HABIT_FORMATION_STAGES[0];
                   const statusMessage = permanence ? getHabitStatusMessage(permanence) : 'Calculating permanence...';
                   const nextMilestone = permanence ? getNextMilestone(permanence) : null;
                   
+                  // Determine card border based on risk level
+                  const getRiskBorder = (riskLevel?: string) => {
+                    switch (riskLevel) {
+                      case 'critical':
+                        return 'border-red-300 shadow-red-100 shadow-lg';
+                      case 'warning':
+                        return 'border-orange-300 shadow-orange-100 shadow-lg';
+                      case 'caution':
+                        return 'border-yellow-300 shadow-yellow-100 shadow-md';
+                      default:
+                        return 'border-gray-200 shadow-sm';
+                    }
+                  };
+                  
                   return (
                     <div
                       key={habit.id}
-                      className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow"
+                      className={`bg-white rounded-xl border p-6 hover:shadow-md transition-all ${getRiskBorder(risk?.riskLevel)}`}
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center space-x-3">
@@ -539,6 +704,19 @@ export default function HabitsPage() {
                             <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                               {habit.category}
                             </span>
+                          )}
+                          {/* Risk indicator badge */}
+                          {risk && risk.riskLevel !== 'safe' && (
+                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              risk.riskLevel === 'critical' 
+                                ? 'bg-red-100 text-red-700 animate-pulse' 
+                                : risk.riskLevel === 'warning'
+                                ? 'bg-orange-100 text-orange-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {risk.riskLevel === 'critical' ? '🚨 CRITICAL' : 
+                               risk.riskLevel === 'warning' ? '⚠️ WARNING' : '⚡ CAUTION'}
+                            </div>
                           )}
                         </div>
                         <div className="flex items-center space-x-2">
@@ -594,7 +772,7 @@ export default function HabitsPage() {
                               <div 
                                 className="h-full transition-all duration-700 ease-out rounded-full"
                                 style={{ 
-                                  width: `${permanence.permanencePercentage}%`,
+                                  width: `${Math.max(2, permanence.permanencePercentage)}%`, // Minimum 2% for visibility
                                   backgroundColor: currentStage.color
                                 }}
                               />
@@ -605,6 +783,46 @@ export default function HabitsPage() {
                           <div className="text-sm text-gray-700 mb-2">
                             {statusMessage}
                           </div>
+                          
+                          {/* Risk Assessment Display */}
+                          {risk && risk.riskLevel !== 'safe' && (
+                            <div className={`rounded-lg p-3 mb-3 ${
+                              risk.riskLevel === 'critical' 
+                                ? 'bg-red-50 border border-red-200' 
+                                : risk.riskLevel === 'warning'
+                                ? 'bg-orange-50 border border-orange-200'
+                                : 'bg-yellow-50 border border-yellow-200'
+                            }`}>
+                              <div className={`text-xs font-medium mb-1 ${
+                                risk.riskLevel === 'critical' 
+                                  ? 'text-red-700' 
+                                  : risk.riskLevel === 'warning'
+                                  ? 'text-orange-700'
+                                  : 'text-yellow-700'
+                              }`}>
+                                Formation Risk Analysis
+                              </div>
+                              <div className={`text-sm mb-2 ${
+                                risk.riskLevel === 'critical' 
+                                  ? 'text-red-800' 
+                                  : risk.riskLevel === 'warning'
+                                  ? 'text-orange-800'
+                                  : 'text-yellow-800'
+                              }`}>
+                                {risk.interventionMessage}
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className={risk.riskLevel === 'critical' ? 'text-red-700' : risk.riskLevel === 'warning' ? 'text-orange-700' : 'text-yellow-700'}>
+                                  📉 Risk: {risk.regressionRisk}%
+                                </div>
+                                {risk.consecutiveMissedDays > 0 && (
+                                  <div className={risk.riskLevel === 'critical' ? 'text-red-700' : risk.riskLevel === 'warning' ? 'text-orange-700' : 'text-yellow-700'}>
+                                    ⏱️ Missed: {risk.consecutiveMissedDays} days
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           
                           {/* Next Milestone */}
                           {nextMilestone && nextMilestone.daysUntil > 0 && (
