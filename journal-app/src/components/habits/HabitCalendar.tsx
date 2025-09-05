@@ -41,12 +41,13 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
 
   const loadCalendarData = async () => {
     try {
-      // Simple date range for last 30 days
+      // Date range for current month and last 2 months
       const today = new Date();
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(today.getDate() - 30);
+      const twoMonthsAgo = new Date();
+      twoMonthsAgo.setMonth(today.getMonth() - 2);
+      twoMonthsAgo.setDate(1); // Start from first day of the month
       
-      const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+      const startDate = twoMonthsAgo.toISOString().split('T')[0];
       const endDate = today.toISOString().split('T')[0];
       
       const url = `/api/habits/${habit.id}/logs?startDate=${startDate}&endDate=${endDate}`;
@@ -64,7 +65,7 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
       
       // Generate simple calendar
       const calendar: CalendarDay[] = [];
-      const currentDate = new Date(thirtyDaysAgo);
+      const currentDate = new Date(twoMonthsAgo);
       
       while (currentDate <= today) {
         const dateString = currentDate.toISOString().split('T')[0];
@@ -91,6 +92,66 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
   const getDayAbbreviation = (dayIndex: number) => {
     const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     return days[dayIndex];
+  };
+
+  const groupDaysByMonth = (days: CalendarDay[]) => {
+    const grouped: { [key: string]: CalendarDay[] } = {};
+    days.forEach(day => {
+      const monthKey = `${day.date.getFullYear()}-${day.date.getMonth()}`;
+      if (!grouped[monthKey]) {
+        grouped[monthKey] = [];
+      }
+      grouped[monthKey].push(day);
+    });
+    return grouped;
+  };
+
+  const getMonthName = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const createCalendarGrid = (monthDays: CalendarDay[]) => {
+    if (monthDays.length === 0) return [];
+    
+    // Sort days by date to ensure proper order
+    const sortedDays = [...monthDays].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const firstDay = sortedDays[0];
+    const lastDay = sortedDays[sortedDays.length - 1];
+    
+    // Get the first day of the month and its day of week
+    const startOfMonth = new Date(firstDay.date.getFullYear(), firstDay.date.getMonth(), 1);
+    const endOfMonth = new Date(lastDay.date.getFullYear(), lastDay.date.getMonth() + 1, 0);
+    const startDay = startOfMonth.getDay(); // 0 = Sunday
+    
+    // Create complete month grid with padding
+    const paddingDays = Array(startDay).fill(null);
+    
+    // Fill in all days of the month, even if not in our data range
+    const allMonthDays = [];
+    const currentDate = new Date(startOfMonth);
+    
+    while (currentDate <= endOfMonth) {
+      const existingDay = sortedDays.find(d => 
+        d.date.toDateString() === currentDate.toDateString()
+      );
+      
+      if (existingDay) {
+        allMonthDays.push(existingDay);
+      } else {
+        // Create placeholder for days outside our data range
+        allMonthDays.push({
+          date: new Date(currentDate),
+          isCurrentMonth: true,
+          isToday: currentDate.toDateString() === new Date().toDateString(),
+          isCompleted: false,
+          habitLog: undefined
+        } as CalendarDay);
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return [...paddingDays, ...allMonthDays];
   };
 
   const toggleDayCompletion = async (day: CalendarDay) => {
@@ -136,6 +197,12 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
     }
   };
 
+
+  // Calculate date range for UI logic
+  const today = new Date();
+  const twoMonthsAgo = new Date();
+  twoMonthsAgo.setMonth(today.getMonth() - 2);
+  twoMonthsAgo.setDate(1);
 
   const completedDays = calendarData.filter(day => day.isCompleted).length;
   const totalDays = calendarData.length;
@@ -197,36 +264,72 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
             </div>
           ) : (
             <>
-              {/* Day headers */}
               <div className="p-4">
-                <div className="grid grid-cols-7 gap-1 mb-2">
+                {/* Day headers - shown once at the top */}
+                <div className="grid grid-cols-7 gap-px mb-4 sticky top-0 bg-white border border-gray-200 rounded-md overflow-hidden">
                   {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
-                    <div key={dayIndex} className="text-center text-xs font-medium text-gray-500 py-2">
+                    <div key={dayIndex} className="text-center text-xs font-semibold text-gray-600 py-3 bg-gray-50 border-r border-gray-200 last:border-r-0">
                       {getDayAbbreviation(dayIndex)}
                     </div>
                   ))}
                 </div>
                 
-                {/* Simple calendar grid */}
-                <div className="grid grid-cols-7 gap-1">
-                  {calendarData.map((day, index) => (
-                    <button
-                      key={index}
-                      onClick={() => toggleDayCompletion(day)}
-                      className={`
-                        w-8 h-8 rounded-md text-xs flex items-center justify-center font-medium transition-all cursor-pointer
-                        ${day.isToday ? 'ring-2 ring-blue-400' : ''}
-                        ${day.isCompleted 
-                          ? 'bg-green-500 text-white hover:bg-green-600' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }
-                        focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50
-                      `}
-                      title={`${day.date.toLocaleDateString()} - Click to ${day.isCompleted ? 'mark incomplete' : 'mark complete'}`}
-                    >
-                      {day.date.getDate()}
-                    </button>
-                  ))}
+                {/* Monthly calendar sections */}
+                <div className="space-y-6">
+                  {Object.entries(groupDaysByMonth(calendarData))
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .slice(-3) // Only show last 3 months
+                    .map(([monthKey, monthDays]) => {
+                      const gridDays = createCalendarGrid(monthDays);
+                      return (
+                        <div key={monthKey} className="space-y-2">
+                          {/* Month header */}
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">
+                            {getMonthName(monthDays[0].date)}
+                          </h5>
+                          
+                          {/* Calendar grid for this month */}
+                          <div className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="grid grid-cols-7 gap-px bg-gray-200">
+                              {gridDays.map((day, index) => {
+                                if (!day) {
+                                  // Empty padding cell
+                                  return <div key={`empty-${index}`} className="w-10 h-10 bg-white"></div>;
+                                }
+                                
+                                const isInTrackingRange = day.date >= twoMonthsAgo && day.date <= today;
+                                
+                                return (
+                                  <button
+                                    key={`${day.date.toISOString()}-${index}`}
+                                    onClick={() => isInTrackingRange ? toggleDayCompletion(day) : undefined}
+                                    disabled={!isInTrackingRange}
+                                    className={`
+                                      w-10 h-10 text-xs flex items-center justify-center font-medium transition-all
+                                      ${!isInTrackingRange 
+                                        ? 'opacity-40 cursor-not-allowed text-gray-400 bg-white' 
+                                        : day.isCompleted 
+                                          ? 'bg-green-500 text-white hover:bg-green-600 cursor-pointer'
+                                          : 'bg-white text-gray-700 hover:bg-gray-100 cursor-pointer'
+                                      }
+                                      ${day.isToday ? 'ring-2 ring-blue-400 ring-inset z-10' : ''}
+                                      ${isInTrackingRange ? 'focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-inset focus:z-10' : ''}
+                                    `}
+                                    title={
+                                      isInTrackingRange 
+                                        ? `${day.date.toLocaleDateString()} - Click to ${day.isCompleted ? 'mark incomplete' : 'mark complete'}`
+                                        : `${day.date.toLocaleDateString()} - Outside tracking range`
+                                    }
+                                  >
+                                    {day.date.getDate()}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
 
@@ -234,7 +337,7 @@ export default function HabitCalendar({ habit }: HabitCalendarProps) {
               {totalDays > 0 && (
                 <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Last 30 days</span>
+                    <span className="text-gray-600">Last 3 months</span>
                     <div className="flex items-center space-x-3">
                       <span className="text-gray-700">
                         {completedDays} / {totalDays} days
