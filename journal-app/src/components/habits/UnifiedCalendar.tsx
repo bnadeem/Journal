@@ -254,8 +254,8 @@ export default function UnifiedCalendar({
       {/* Monthly calendar sections */}
       <div className="calendar-months">
         {Object.entries(groupDaysByMonth(calendarData))
-          .sort(([a], [b]) => a.localeCompare(b))
-          .slice(-3)
+          .sort(([a], [b]) => b.localeCompare(a))
+          .slice(0, 3)
           .map(([monthKey, monthDays]) => {
             const gridDays = createCalendarGrid(monthDays);
             return (
