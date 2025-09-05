@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import JournalEditor from '@/components/journal/JournalEditor';
+import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { format } from 'date-fns';
 
@@ -68,39 +69,65 @@ export default function NewEntryPage() {
   const dateInputValue = format(selectedDate, 'yyyy-MM-dd');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Navigation */}
-          <div className="mb-6">
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <button 
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Modern Header */}
+          <div className="flex justify-between items-start mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-green-600 rounded-xl">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Create New Entry</h1>
+                <p className="text-gray-600 text-sm">Document your thoughts and experiences</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
                 onClick={() => router.push('/')}
-                className="hover:text-blue-600 transition-colors"
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg hover:border-gray-400"
               >
-                All Years
+                ← Back to Journal
               </button>
-              <span>/</span>
-              <span className="text-gray-900 font-medium">New Entry</span>
             </div>
           </div>
 
           {/* Date Selection */}
-          <div className="mb-6 bg-white/80 backdrop-blur rounded-lg shadow-lg p-6 border border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Create New Entry</h2>
-            <div className="flex items-center space-x-4">
-              <label htmlFor="entry-date" className="text-sm font-medium text-gray-700">
-                Entry Date:
-              </label>
-              <input
-                id="entry-date"
-                type="date"
-                value={dateInputValue}
-                onChange={handleDateChange}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <div className="text-sm text-gray-600">
-                Selected: <span className="font-medium text-gray-900">{title}</span>
+          <div className="mb-8 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Entry Date</h2>
+                  <p className="text-gray-600 text-sm">Select the date for your journal entry</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-3">
+                  <label htmlFor="entry-date" className="text-sm font-medium text-gray-700">
+                    Date:
+                  </label>
+                  <input
+                    id="entry-date"
+                    type="date"
+                    value={dateInputValue}
+                    onChange={handleDateChange}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Selected:</span>
+                  <span className="text-sm font-medium text-gray-900 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">{title}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -112,14 +139,30 @@ export default function NewEntryPage() {
             </div>
           )}
 
-          {/* Journal Editor */}
-          <JournalEditor
-            initialContent=""
-            title={title}
-            onManualSave={handleSave}
-            onCancel={handleCancel}
-            isLoading={isLoading}
-          />
+          {/* Main Content: Journal Editor and Habits Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Journal Editor */}
+            <div className="lg:col-span-2">
+              <JournalEditor
+                initialContent=""
+                title={title}
+                onManualSave={handleSave}
+                onCancel={handleCancel}
+                isLoading={isLoading}
+              />
+            </div>
+
+            {/* Habit Tracker Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-8">
+                <HabitTrackerWrapper 
+                  year={year}
+                  month={month}
+                  day={day}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

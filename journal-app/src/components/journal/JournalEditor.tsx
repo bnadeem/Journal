@@ -105,41 +105,57 @@ export default function JournalEditor({
   }, [handleSave]);
 
   return (
-    <div className="bg-white/90 backdrop-blur rounded-lg shadow-xl border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-100">
         <div className="flex justify-between items-center">
-          <div>
-            {title && (
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{title}</h1>
-            )}
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span>{wordCount} words</span>
-              <span>•</span>
-              {isSaving ? (
-                <span className="text-blue-600">Saving...</span>
-              ) : hasUnsavedChanges ? (
-                <span className="text-orange-600">Unsaved changes</span>
-              ) : lastSaved ? (
-                <span className="text-green-600">
-                  Saved at {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              ) : (
-                <span>Ready</span>
+          <div className="flex items-center space-x-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </div>
+            <div>
+              {title && (
+                <h1 className="text-lg font-semibold text-gray-900 mb-1">{title}</h1>
               )}
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <span>{wordCount} words</span>
+                <span>•</span>
+                {isSaving ? (
+                  <span className="text-blue-600 flex items-center space-x-1">
+                    <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Saving...</span>
+                  </span>
+                ) : hasUnsavedChanges ? (
+                  <span className="text-orange-600">Unsaved changes</span>
+                ) : lastSaved ? (
+                  <span className="text-green-600">
+                    Saved at {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                ) : (
+                  <span>Ready</span>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => setIsPreviewMode(!isPreviewMode)}
-              className="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className={`px-3 py-2 text-sm rounded-lg transition-colors border ${
+                isPreviewMode 
+                  ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+              }`}
             >
-              {isPreviewMode ? 'Edit' : 'Preview'}
+              {isPreviewMode ? '✏️ Edit' : '👁️ Preview'}
             </button>
             {onCancel && (
               <button
                 onClick={onCancel}
-                className="px-4 py-1.5 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg hover:border-gray-400"
               >
                 Cancel
               </button>
@@ -147,9 +163,9 @@ export default function JournalEditor({
             <button
               onClick={handleSave}
               disabled={isLoading}
-              className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="px-6 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
             >
-              {isLoading ? 'Saving...' : 'Save'}
+              {isLoading ? 'Saving...' : 'Save Entry'}
             </button>
           </div>
         </div>
@@ -204,16 +220,23 @@ export default function JournalEditor({
       </div>
 
       {/* Footer */}
-      <div className="bg-gray-50/80 px-6 py-3 border-t border-gray-200">
-        <div className="flex justify-between items-center text-sm text-gray-500">
-          <span>Press Ctrl+S (⌘+S) to save</span>
+      <div className="bg-gray-50 px-6 py-4 border-t border-gray-100">
+        <div className="flex justify-between items-center text-sm text-gray-600">
+          <div className="flex items-center space-x-1">
+            <kbd className="px-2 py-1 text-xs bg-white border border-gray-300 rounded-md">
+              {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+S
+            </kbd>
+            <span>to save</span>
+          </div>
           <div className="flex items-center space-x-4">
-            <span>{content.length} characters</span>
+            <span className="bg-white px-2 py-1 rounded-full text-xs border border-gray-200">
+              {content.length} characters
+            </span>
             <span>•</span>
             {enableAutoSave ? (
-              <span>Auto-save enabled ({autoSaveDelay / 1000}s delay)</span>
+              <span className="text-green-600">Auto-save ({autoSaveDelay / 1000}s)</span>
             ) : (
-              <span>Manual save mode</span>
+              <span>Manual save</span>
             )}
           </div>
         </div>

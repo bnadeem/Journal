@@ -18,41 +18,65 @@ export default async function MonthPage({ params }: PageProps) {
   ]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <div className="flex items-center space-x-4 mb-4">
-              <Link 
-                href="/" 
-                className="text-blue-600 hover:text-blue-800"
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Modern Header */}
+          <div className="flex justify-between items-start mb-8">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-600 rounded-xl">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{MONTH_FULL_NAMES[monthName]} {year}</h1>
+                <p className="text-gray-600 text-sm">{entries.length} {entries.length === 1 ? 'entry' : 'entries'} this month</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Link
+                href="/"
+                className="px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg hover:border-gray-400 text-sm"
               >
-                ← All Years
+                All Years
               </Link>
-              <span className="text-gray-300">/</span>
-              <Link 
-                href={`/year/${year}`} 
-                className="text-blue-600 hover:text-blue-800"
+              <Link
+                href={`/year/${year}`}
+                className="px-3 py-2 text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg hover:border-gray-400 text-sm"
               >
                 {year}
               </Link>
+              <Link
+                href="/entry/new"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              >
+                New Entry
+              </Link>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              {MONTH_FULL_NAMES[monthName]} {year}
-            </h1>
-            <p className="text-lg text-gray-600">
-              {entries.length} {entries.length === 1 ? 'entry' : 'entries'} this month
-            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Journal Entries */}
             <div className="lg:col-span-2">
-              <div className="bg-white/80 backdrop-blur rounded-lg shadow-lg border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-2xl font-semibold text-gray-800">
-                    Daily Entries
-                  </h2>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-semibold text-gray-900">Daily Entries</h2>
+                        <p className="text-gray-600 text-sm">Your journal entries for this month</p>
+                      </div>
+                    </div>
+                    <div className="text-sm text-blue-600 font-medium">
+                      {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="p-6">
@@ -62,18 +86,23 @@ export default async function MonthPage({ params }: PageProps) {
                         <Link
                           key={entry.id}
                           href={`/entry/${year}/${month}/${entry.day}`}
-                          className="block p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+                          className="block p-6 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-200 group hover:bg-blue-50"
                         >
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="text-lg font-medium text-gray-900 group-hover:text-blue-600">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
                               {monthName} {entry.day}, {year}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {entry.wordCount} words
+                            <div className="flex items-center space-x-3">
+                              <div className="text-sm text-gray-500 bg-white px-2 py-1 rounded-full">
+                                {entry.wordCount} words
+                              </div>
+                              <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
                             </div>
                           </div>
                           {entry.excerpt && (
-                            <p className="text-gray-600 text-sm line-clamp-2">
+                            <p className="text-gray-600 text-sm line-clamp-2 group-hover:text-blue-600 transition-colors">
                               {entry.excerpt}
                             </p>
                           )}
@@ -82,12 +111,17 @@ export default async function MonthPage({ params }: PageProps) {
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <div className="text-gray-500 mb-4">
-                        No entries for {MONTH_FULL_NAMES[monthName]} {year}.
+                      <div className="w-20 h-20 mx-auto mb-6 text-gray-400">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} 
+                            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
                       </div>
+                      <h3 className="text-xl font-medium text-gray-900 mb-2">No entries for {MONTH_FULL_NAMES[monthName]} {year}</h3>
+                      <p className="text-gray-600 mb-6">Start documenting this month by creating your first entry!</p>
                       <Link
                         href="/entry/new"
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         Create Entry
                       </Link>
@@ -99,26 +133,39 @@ export default async function MonthPage({ params }: PageProps) {
 
             {/* Monthly Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white/80 backdrop-blur rounded-lg shadow-lg border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    Monthly Summary
-                  </h2>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Monthly Summary</h2>
+                      <p className="text-gray-600 text-sm">Reflections and key themes</p>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="p-6">
                   {summary ? (
-                    <div className="prose prose-sm max-w-none">
+                    <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700">
                       <ReactMarkdown>{summary.content}</ReactMarkdown>
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <div className="text-gray-500 mb-4 text-sm">
-                        No summary available yet.
+                      <div className="w-16 h-16 mx-auto mb-4 text-gray-400">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} 
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
                       </div>
+                      <h4 className="font-medium text-gray-900 mb-2">No summary yet</h4>
+                      <p className="text-gray-600 mb-4 text-sm">Reflect on this month's entries</p>
                       <Link
                         href={`/summary/${year}/${month}`}
-                        className="inline-flex items-center px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        className="inline-flex items-center px-4 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200"
                       >
                         Create Summary
                       </Link>
