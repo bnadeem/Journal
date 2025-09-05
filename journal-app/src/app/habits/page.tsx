@@ -71,13 +71,51 @@ export default function HabitsPage() {
         const permanencePromises = habitsData.map(async (habit: Habit) => {
           try {
             // Fetch full log history for permanence calculation
-            const startDate = new Date(habit.createdAt || habit.id).toISOString().split('T')[0];
+            // Go back further than createdAt to capture any historical data
+            const createdDate = new Date(habit.createdAt || habit.id);
+            const earlierStartDate = new Date(createdDate);
+            earlierStartDate.setMonth(createdDate.getMonth() - 2); // Go back 2 more months
+            
+            const startDate = earlierStartDate.toISOString().split('T')[0];
             const endDate = new Date().toISOString().split('T')[0];
             
             const logsResponse = await fetch(`/api/habits/${habit.id}/logs?startDate=${startDate}&endDate=${endDate}`);
             if (logsResponse.ok) {
               const logs = await logsResponse.json();
-              const permanenceMetrics = calculateHabitPermanence(logs, new Date(habit.createdAt || habit.id));
+              
+              // Debug logging
+              if (habit.name === 'Kettlebell Swings') {
+                console.log('Debug Kettlebell Swings:');
+                console.log('- Habit created:', habit.createdAt);
+                console.log('- Start date for API:', startDate);
+                console.log('- End date for API:', endDate);
+                console.log('- Logs received:', logs.length);
+                console.log('- Completed logs:', logs.filter((l: any) => l.completed).length);
+                console.log('- Sample logs:', logs.slice(0, 5));
+              }
+              
+              // Use the earliest log date or createdAt, whichever is earlier
+              const createdAtDate = new Date(habit.createdAt || habit.id);
+              const completedLogs = logs.filter((l: any) => l.completed);
+              
+              let actualStartDate = createdAtDate;
+              if (completedLogs.length > 0) {
+                const sortedLogs = completedLogs.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                const earliestLogDate = new Date(sortedLogs[0].date);
+                if (earliestLogDate < createdAtDate) {
+                  actualStartDate = earliestLogDate;
+                }
+              }
+              
+              const permanenceMetrics = calculateHabitPermanence(logs, actualStartDate);
+              
+              // Debug logging for permanence
+              if (habit.name === 'Kettlebell Swings') {
+                console.log('- Created at date:', createdAtDate);
+                console.log('- Actual start date used:', actualStartDate);
+                console.log('- Permanence metrics:', permanenceMetrics);
+              }
+              
               return { habitId: habit.id, permanence: permanenceMetrics };
             }
           } catch (error) {

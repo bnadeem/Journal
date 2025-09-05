@@ -2,9 +2,9 @@
   "habits": [
     {
       "habitId": "2025-09-05T16:16:24.893Z-habit-0.11891766378781177",
-      "completed": false,
+      "completed": true,
       "createdAt": "2025-09-05T20:13:23.436Z",
-      "updatedAt": "2025-09-05T21:27:26.254Z"
+      "updatedAt": "2025-09-05T22:12:38.811Z"
     }
   ]
 }
