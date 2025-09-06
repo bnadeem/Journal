@@ -6,6 +6,7 @@ import { Habit, HabitStats } from '@/types/journal';
 import DayDetailModal from '@/components/habits/DayDetailModal';
 import HabitEditModal from '@/components/habits/HabitEditModal';
 import NewEntryButton from '@/components/ui/NewEntryButton';
+import LogoutButton from '@/components/auth/LogoutButton';
 import { calculateHabitPermanence, HABIT_FORMATION_STAGES, assessHabitRisk, HabitRiskAssessment } from '@/lib/habit-permanence';
 import '@/components/habits/unified-calendar.css';
 import '@/components/habits/habit-legend.css';
@@ -274,6 +275,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
               >
                 New Entry
               </Link>
+              <LogoutButton />
             </div>
           </div>
 

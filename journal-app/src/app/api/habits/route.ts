@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import client from '@/lib/libsql';
+import { withAuth } from '@/lib/api-auth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = await withAuth(request);
+  if (authError) return authError;
   try {
     const result = await client.execute(
       'SELECT * FROM Habit WHERE isActive = 1 ORDER BY createdAt DESC'
@@ -30,6 +33,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await withAuth(request);
+  if (authError) return authError;
+  
   try {
     const body = await request.json();
     const { name, description, category, color, targetFrequency, isActive } = body;
@@ -63,6 +69,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = await withAuth(request);
+  if (authError) return authError;
+  
   try {
     const body = await request.json();
     const { id, ...updates } = body;

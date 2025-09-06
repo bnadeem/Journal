@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import client from '@/lib/libsql';
+import { withAuth } from '@/lib/api-auth';
 
 // GET /api/entries - Get all years, or months for a year, or entries for a month
 export async function GET(request: NextRequest) {
+  const authError = await withAuth(request);
+  if (authError) return authError;
   try {
     const { searchParams } = new URL(request.url);
     const year = searchParams.get('year');
