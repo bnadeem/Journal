@@ -68,19 +68,19 @@ export default function HabitsPage() {
         });
         setHabitStats(statsMap);
         
+        // Use standardized date range for all habits (3 months back)
+        const endDate = new Date().toISOString().split('T')[0];
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 3);
+        const startDateStr = startDate.toISOString().split('T')[0];
+
         // Calculate habit permanence metrics for each habit
         const permanencePromises = habitsData.map(async (habit: Habit) => {
           try {
-            // Fetch full log history for permanence calculation
-            // Go back further than createdAt to capture any historical data
-            const createdDate = new Date(habit.createdAt || habit.id);
-            const earlierStartDate = new Date(createdDate);
-            earlierStartDate.setMonth(createdDate.getMonth() - 2); // Go back 2 more months
-            
-            const startDate = earlierStartDate.toISOString().split('T')[0];
-            const endDate = new Date().toISOString().split('T')[0];
-            
-            const logsResponse = await fetch(`/api/habits/${habit.id}/logs?startDate=${startDate}&endDate=${endDate}`);
+            // Use standardized date range with Next.js fetch caching
+            const logsResponse = await fetch(`/api/habits/${habit.id}/logs?startDate=${startDateStr}&endDate=${endDate}`, {
+              next: { revalidate: 300 } // Cache for 5 minutes
+            });
             if (logsResponse.ok) {
               const logs = await logsResponse.json();
               
@@ -110,53 +110,37 @@ export default function HabitsPage() {
               
               const permanenceMetrics = calculateHabitPermanence(logs, actualStartDate);
               
-              // Debug logging for permanence
-              if (habit.name === 'Kettlebell Swings') {
-                console.log('- Created at date:', createdAtDate);
-                console.log('- Actual start date used:', actualStartDate);
-                console.log('- Permanence metrics:', permanenceMetrics);
-              }
+              // Calculate risk assessment using the same logs (no additional API call)
+              const riskAssessment = assessHabitRisk(logs, permanenceMetrics);
               
-              return { habitId: habit.id, permanence: permanenceMetrics };
+              return { 
+                habitId: habit.id, 
+                permanence: permanenceMetrics,
+                risk: riskAssessment,
+                logs 
+              };
             }
           } catch (error) {
             console.error(`Error calculating permanence for habit ${habit.id}:`, error);
           }
-          return { habitId: habit.id, permanence: null };
+          return { habitId: habit.id, permanence: null, risk: null, logs: [] };
         });
         
         const permanenceResults = await Promise.all(permanencePromises);
         const permanenceMap: Record<string, any> = {};
-        const riskMap: Record<string, HabitRiskAssessment> = {};
+        const risksMap: Record<string, HabitRiskAssessment> = {};
         
-        permanenceResults.forEach(({ habitId, permanence }) => {
+        permanenceResults.forEach(({ habitId, permanence, risk }) => {
           if (permanence) {
             permanenceMap[habitId] = permanence;
-            
-            // Calculate risk assessment for each habit
-            const habit = habitsData.find((h: Habit) => h.id === habitId);
-            if (habit) {
-              // Get the logs for risk assessment
-              const createdDate = new Date(habit.createdAt || habit.id);
-              const earlierStartDate = new Date(createdDate);
-              earlierStartDate.setMonth(createdDate.getMonth() - 2);
-              
-              const startDate = earlierStartDate.toISOString().split('T')[0];
-              const endDate = new Date().toISOString().split('T')[0];
-              
-              // Use cached logs from permanence calculation if available
-              fetch(`/api/habits/${habitId}/logs?startDate=${startDate}&endDate=${endDate}`)
-                .then(res => res.json())
-                .then(logs => {
-                  const risk = assessHabitRisk(logs, permanence);
-                  setHabitRisks(prev => ({ ...prev, [habitId]: risk }));
-                })
-                .catch(err => console.error(`Error assessing risk for habit ${habitId}:`, err));
-            }
+          }
+          if (risk) {
+            risksMap[habitId] = risk;
           }
         });
         
         setHabitPermanence(permanenceMap);
+        setHabitRisks(risksMap);
       }
     } catch (error) {
       console.error('Error fetching habits:', error);

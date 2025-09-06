@@ -57,16 +57,15 @@ export default function HabitLegend({
 
   const fetchHabitStats = async (habit: Habit): Promise<HabitStats> => {
     try {
-      // Fetch last 30 days of data for stats calculation
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const today = new Date();
-      
-      const startDate = thirtyDaysAgo.toISOString().split('T')[0];
-      const endDate = today.toISOString().split('T')[0];
+      // Use standardized 3-month range with Next.js caching
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 3);
+      const startDateStr = startDate.toISOString().split('T')[0];
       
       const response = await fetch(
-        `/api/habits/${habit.id}/logs?startDate=${startDate}&endDate=${endDate}`
+        `/api/habits/${habit.id}/logs?startDate=${startDateStr}&endDate=${endDate}`,
+        { next: { revalidate: 300 } } // Cache for 5 minutes
       );
       
       if (!response.ok) {
@@ -104,6 +103,7 @@ export default function HabitLegend({
       }
       
       // Check if completed today
+      const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
       const todayLog = logs.find((log: any) => log.date === todayStr);
       const completedToday = todayLog?.completed || false;
