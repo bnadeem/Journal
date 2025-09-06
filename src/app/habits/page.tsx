@@ -331,43 +331,28 @@ export default function HabitsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="container mx-auto px-6 py-8">
         <div className="max-w-7xl mx-auto">
-          {/* Modern Header */}
-          <div className="flex justify-between items-start mb-8">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-600 rounded-xl">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Habit Tracker</h1>
-                <p className="text-gray-600 text-sm">Manage and track your daily habits</p>
-              </div>
+          {/* Page Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Habit Tracker</h1>
+              <p className="text-gray-600">Manage and track your daily habits</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <Link
-                href="/"
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg hover:border-gray-400"
-              >
-                ← Back to Journal
-              </Link>
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-              >
-                Add New Habit
-              </button>
-            </div>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              Add New Habit
+            </button>
           </div>
 
           {/* Progressive Risk Alert System */}
