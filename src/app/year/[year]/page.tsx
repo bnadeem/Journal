@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MONTH_FULL_NAMES } from '@/types/journal';
 import NewEntryButton from '@/components/ui/NewEntryButton';
+import client from '@/lib/libsql';
 
 interface PageProps {
   params: Promise<{ year: string }>;
@@ -8,15 +9,17 @@ interface PageProps {
 
 export default async function YearPage({ params }: PageProps) {
   const { year } = await params;
-  // Fetch months from database API
-  const monthsRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entries?year=${year}`, {
-    cache: 'no-store'
-  });
-  
+  // Fetch months directly from database
   let months: string[] = [];
-  if (monthsRes.ok) {
-    const data = await monthsRes.json();
-    months = data.months || [];
+  
+  try {
+    const result = await client.execute({
+      sql: 'SELECT DISTINCT month FROM JournalEntry WHERE year = ? ORDER BY month',
+      args: [parseInt(year)]
+    });
+    months = result.rows.map(row => row.month as string);
+  } catch (error) {
+    console.error('Error fetching months:', error);
   }
 
   return (

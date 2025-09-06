@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { ReactMarkdown } from '@/lib/markdown';
 import NewEntryButton from '@/components/ui/NewEntryButton';
+import client from '@/lib/libsql';
 
 interface PageProps {
   params: Promise<{ year: string; month: string }>;
@@ -11,15 +12,23 @@ export default async function MonthPage({ params }: PageProps) {
   const { year, month } = await params;
   const monthName = month as MonthName;
   
-  // Fetch entries from database API
-  const entriesRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entries?year=${year}&month=${month}`, {
-    cache: 'no-store'
-  });
-  
+  // Fetch entries directly from database
   let entries: any[] = [];
-  if (entriesRes.ok) {
-    const data = await entriesRes.json();
-    entries = data.entries || [];
+  
+  try {
+    const result = await client.execute({
+      sql: 'SELECT day, content, createdAt, updatedAt FROM JournalEntry WHERE year = ? AND month = ? ORDER BY day',
+      args: [parseInt(year), month]
+    });
+
+    entries = result.rows.map(row => ({
+      day: row.day?.toString() || '',
+      content: row.content as string || '',
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
+    }));
+  } catch (error) {
+    console.error('Error fetching entries:', error);
   }
   
   // For now, we'll skip summary functionality as it requires separate API implementation

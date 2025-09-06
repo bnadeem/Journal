@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { formatDate } from '@/lib/utils';
 import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
+import client from '@/lib/libsql';
 
 interface PageProps {
   params: Promise<{ slug: string[] }>;
@@ -24,20 +25,31 @@ export default async function EntryPage({ params }: PageProps) {
     );
   }
 
-  // Fetch entry from database API
-  const entryRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entries/${year}/${month}/${day}`, {
-    cache: 'no-store'
-  });
-  
+  // Fetch entry directly from database
   let entry = null;
   let entryContent = '';
   let wordCount = 0;
   
-  if (entryRes.ok) {
-    const data = await entryRes.json();
-    entry = data.entry;
-    entryContent = entry.content || '';
-    wordCount = entryContent.split(/\s+/).filter(word => word.length > 0).length;
+  try {
+    const result = await client.execute({
+      sql: 'SELECT * FROM JournalEntry WHERE year = ? AND month = ? AND day = ?',
+      args: [parseInt(year), month, parseInt(day)]
+    });
+    
+    if (result.rows.length > 0) {
+      const dbEntry = result.rows[0];
+      entry = {
+        year: String(dbEntry.year),
+        month: dbEntry.month as string,
+        day: String(dbEntry.day),
+        content: dbEntry.content as string || '',
+        frontmatter: dbEntry.frontmatter ? JSON.parse(dbEntry.frontmatter as string) : {}
+      };
+      entryContent = entry.content || '';
+      wordCount = entryContent.split(/\s+/).filter(word => word.length > 0).length;
+    }
+  } catch (error) {
+    console.error('Error fetching entry:', error);
   }
   
   // Adjacent entries functionality removed for database migration simplicity

@@ -19,6 +19,11 @@
       "date": "2025-09-06",
       "completed": true,
       "completedAt": "2025-09-06T11:55:04.781Z"
+    },
+    {
+      "habitId": "w53naaxfqfdy6yhh84519khu",
+      "date": "2025-09-06",
+      "completed": false
     }
   ]
 }
