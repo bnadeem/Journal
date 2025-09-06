@@ -101,7 +101,7 @@ export default async function MonthPage({ params }: PageProps) {
                     <div className="space-y-4">
                       {entries.map((entry) => (
                         <Link
-                          key={entry.id}
+                          key={`${year}-${month}-${entry.day}`}
                           href={`/entry/${year}/${month}/${entry.day}`}
                           className="block p-6 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-200 group hover:bg-blue-50"
                         >
