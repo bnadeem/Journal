@@ -121,8 +121,8 @@ export default function DayDetailModal({
       
       await onToggleHabit(habitId, date);
       
-      // Don't reload here - let parent component handle the updates
-      // The optimistic update should be sufficient for immediate feedback
+      // Reload to ensure we have the latest data from database
+      await loadDayHabits();
     } catch (error) {
       console.error('Error toggling habit:', error);
       // Revert optimistic update

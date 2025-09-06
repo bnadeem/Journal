@@ -31,17 +31,20 @@ export default function UnifiedCalendar({
       setIsLoading(true);
       setError(null);
 
-      // Date range for current month and last 2 months
+      // Date range for current month and last 2 months, plus a few days into future
       const today = new Date();
       const twoMonthsAgo = new Date();
       twoMonthsAgo.setMonth(today.getMonth() - 2);
       twoMonthsAgo.setDate(1);
+      
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + 7); // Include next 7 days
 
       // Fetch habit logs for all habits
       const allHabitLogs = await Promise.all(
         habits.map(async (habit) => {
           const startDate = twoMonthsAgo.toISOString().split('T')[0];
-          const endDate = today.toISOString().split('T')[0];
+          const endDate = futureDate.toISOString().split('T')[0];
           
           const response = await fetch(
             `/api/habits/${habit.id}/logs?startDate=${startDate}&endDate=${endDate}`
