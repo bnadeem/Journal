@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readEntry, writeEntry, deleteEntry } from '@/lib/file-operations';
+import prisma from '@/lib/prisma';
 import { MONTH_NAMES } from '@/types/journal';
 
 interface Params {
@@ -29,7 +29,15 @@ export async function GET(
       );
     }
 
-    const entry = await readEntry(year, month as any, day);
+    const entry = await prisma.journalEntry.findUnique({
+      where: {
+        year_month_day: {
+          year: parseInt(year),
+          month: month as any,
+          day: parseInt(day)
+        }
+      }
+    });
     
     if (!entry) {
       return NextResponse.json(
@@ -38,7 +46,18 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ entry });
+    // Parse frontmatter if it exists
+    const frontmatter = entry.frontmatter ? JSON.parse(entry.frontmatter) : {};
+
+    return NextResponse.json({ 
+      entry: {
+        year: entry.year.toString(),
+        month: entry.month,
+        day: entry.day.toString(),
+        content: entry.content,
+        frontmatter
+      }
+    });
 
   } catch (error) {
     console.error('Error reading entry:', error);
@@ -81,18 +100,39 @@ export async function PUT(
       );
     }
 
-    const success = await writeEntry(year, month as any, day, content, frontmatter);
+    // Upsert the journal entry
+    const entry = await prisma.journalEntry.upsert({
+      where: {
+        year_month_day: {
+          year: parseInt(year),
+          month: month as any,
+          day: parseInt(day)
+        }
+      },
+      update: {
+        content,
+        frontmatter: frontmatter && Object.keys(frontmatter).length > 0 ? JSON.stringify(frontmatter) : null,
+        updatedAt: new Date()
+      },
+      create: {
+        year: parseInt(year),
+        month: month as any,
+        day: parseInt(day),
+        content,
+        frontmatter: frontmatter && Object.keys(frontmatter).length > 0 ? JSON.stringify(frontmatter) : null
+      }
+    });
 
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to write entry' },
-        { status: 500 }
-      );
-    }
-
-    // Return the updated entry
-    const entry = await readEntry(year, month as any, day);
-    return NextResponse.json({ entry });
+    // Return the entry in expected format
+    return NextResponse.json({ 
+      entry: {
+        year: entry.year.toString(),
+        month: entry.month,
+        day: entry.day.toString(),
+        content: entry.content,
+        frontmatter: entry.frontmatter ? JSON.parse(entry.frontmatter) : {}
+      }
+    });
 
   } catch (error) {
     console.error('Error updating entry:', error);
@@ -126,14 +166,15 @@ export async function DELETE(
       );
     }
 
-    const success = await deleteEntry(year, month as any, day);
-
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to delete entry or entry not found' },
-        { status: 404 }
-      );
-    }
+    await prisma.journalEntry.delete({
+      where: {
+        year_month_day: {
+          year: parseInt(year),
+          month: month as any,
+          day: parseInt(day)
+        }
+      }
+    });
 
     return NextResponse.json({ success: true });
 

@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllHabits, createHabit, updateHabit, deleteHabit } from '@/lib/file-operations';
+import client from '@/lib/libsql';
 
 export async function GET() {
   try {
-    const habits = await getAllHabits();
+    const result = await client.execute(
+      'SELECT * FROM Habit WHERE isActive = 1 ORDER BY createdAt DESC'
+    );
+    
+    const habits = result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      description: row.description || '',
+      category: row.category,
+      color: row.color,
+      targetFrequency: row.targetFrequency,
+      isActive: Boolean(row.isActive),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt
+    }));
+    
     return NextResponse.json(habits);
   } catch (error) {
     console.error('Error fetching habits:', error);
@@ -26,21 +41,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const habit = await createHabit({
-      name,
-      description,
-      category,
-      color,
-      targetFrequency,
-      isActive: isActive !== undefined ? isActive : true,
+    const habit = await prisma.habit.create({
+      data: {
+        name,
+        description: description || '',
+        category,
+        color,
+        targetFrequency,
+        isActive: isActive !== undefined ? isActive : true,
+      }
     });
-
-    if (!habit) {
-      return NextResponse.json(
-        { error: 'Failed to create habit' },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json(habit, { status: 201 });
   } catch (error) {
@@ -64,16 +74,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const success = await updateHabit(id, updates);
+    const habit = await prisma.habit.update({
+      where: { id },
+      data: updates
+    });
 
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to update habit' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json(habit);
   } catch (error) {
     console.error('Error updating habit:', error);
     return NextResponse.json(
@@ -95,14 +101,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const success = await deleteHabit(id);
-
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to delete habit' },
-        { status: 500 }
-      );
-    }
+    await prisma.habit.delete({
+      where: { id }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

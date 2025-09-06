@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readSummary, writeSummary } from '@/lib/file-operations';
+import prisma from '@/lib/prisma';
 import { MONTH_NAMES } from '@/types/journal';
 
 interface Params {
@@ -22,7 +22,14 @@ export async function GET(
       );
     }
 
-    const summary = await readSummary(year, month as any);
+    const summary = await prisma.monthlySummary.findUnique({
+      where: {
+        year_month: {
+          year: parseInt(year),
+          month: month as any
+        }
+      }
+    });
     
     if (!summary) {
       return NextResponse.json(
@@ -31,7 +38,15 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ summary });
+    return NextResponse.json({ 
+      summary: {
+        year: summary.year.toString(),
+        month: summary.month,
+        content: summary.content,
+        createdAt: summary.createdAt,
+        updatedAt: summary.updatedAt
+      }
+    });
 
   } catch (error) {
     console.error('Error reading summary:', error);
@@ -57,7 +72,7 @@ export async function PUT(
       );
     }
 
-    const { content, themes } = await request.json();
+    const { content } = await request.json();
 
     if (typeof content !== 'string') {
       return NextResponse.json(
@@ -66,18 +81,33 @@ export async function PUT(
       );
     }
 
-    const success = await writeSummary(year, month as any, content, themes);
+    const summary = await prisma.monthlySummary.upsert({
+      where: {
+        year_month: {
+          year: parseInt(year),
+          month: month as any
+        }
+      },
+      update: {
+        content,
+        updatedAt: new Date()
+      },
+      create: {
+        year: parseInt(year),
+        month: month as any,
+        content
+      }
+    });
 
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to write summary' },
-        { status: 500 }
-      );
-    }
-
-    // Return the updated summary
-    const summary = await readSummary(year, month as any);
-    return NextResponse.json({ summary });
+    return NextResponse.json({ 
+      summary: {
+        year: summary.year.toString(),
+        month: summary.month,
+        content: summary.content,
+        createdAt: summary.createdAt,
+        updatedAt: summary.updatedAt
+      }
+    });
 
   } catch (error) {
     console.error('Error updating summary:', error);
