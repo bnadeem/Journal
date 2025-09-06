@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import JournalEditor from '@/components/journal/JournalEditor';
 import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
 import { MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 
-export default function EditEntryPage() {
+function EditEntryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -213,5 +213,20 @@ export default function EditEntryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EditEntryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading editor...</p>
+        </div>
+      </div>
+    }>
+      <EditEntryContent />
+    </Suspense>
   );
 }

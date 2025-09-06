@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import JournalEditor from '@/components/journal/JournalEditor';
 import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { format } from 'date-fns';
 
-export default function NewEntryPage() {
+function NewEntryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -166,5 +166,17 @@ export default function NewEntryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NewEntryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    }>
+      <NewEntryContent />
+    </Suspense>
   );
 }
