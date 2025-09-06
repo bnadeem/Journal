@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDailyHabits, toggleHabit } from '@/lib/file-operations';
-import { MonthName } from '@/types/journal';
+import client from '@/lib/libsql';
+import { MonthName, MONTH_NAMES } from '@/types/journal';
 
 interface RouteParams {
   params: Promise<{ slug: string[] }>;
@@ -18,7 +18,42 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const dailyHabits = await getDailyHabits(year, month as MonthName, day);
+    const monthNumber = MONTH_NAMES.indexOf(month as MonthName) + 1;
+    const date = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    // Get all active habits
+    const habitsResult = await client.execute(
+      'SELECT * FROM Habit WHERE isActive = 1'
+    );
+
+    // Get habit logs for this date
+    const logsResult = await client.execute({
+      sql: 'SELECT * FROM HabitLog WHERE date = ?',
+      args: [date]
+    });
+
+    const logsMap = new Map(logsResult.rows.map(row => [row.habitId as string, {
+      habitId: row.habitId as string,
+      date: row.date as string,
+      completed: Boolean(row.completed)
+    }]));
+
+    // Create daily habits structure
+    const habits = habitsResult.rows.map(habit => {
+      const existingLog = logsMap.get(habit.id as string);
+      return {
+        habitId: habit.id as string,
+        date,
+        completed: existingLog?.completed || false,
+        completedAt: existingLog?.completed ? new Date().toISOString() : undefined
+      };
+    });
+
+    const dailyHabits = {
+      date,
+      habits
+    };
+
     return NextResponse.json(dailyHabits);
   } catch (error) {
     console.error('Error fetching daily habits:', error);
@@ -43,17 +78,64 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const success = await toggleHabit(year, month as MonthName, day, habitId);
+    const monthNumber = MONTH_NAMES.indexOf(month as MonthName) + 1;
+    const date = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to toggle habit' },
-        { status: 500 }
-      );
-    }
+    // Check if habit log exists
+    const existingResult = await client.execute({
+      sql: 'SELECT * FROM HabitLog WHERE habitId = ? AND date = ?',
+      args: [habitId, date]
+    });
 
-    // Return updated daily habits
-    const dailyHabits = await getDailyHabits(year, month as MonthName, day);
+    const currentlyCompleted = existingResult.rows.length > 0 ? Boolean(existingResult.rows[0].completed) : false;
+    const newCompleted = !currentlyCompleted;
+
+    // Toggle the habit
+    await client.execute({
+      sql: `INSERT OR REPLACE INTO HabitLog (id, habitId, date, completed, createdAt) 
+            VALUES (?, ?, ?, ?, datetime('now'))`,
+      args: [
+        `${habitId}-${date}`,
+        habitId,
+        date,
+        newCompleted ? 1 : 0
+      ]
+    });
+
+    // Return updated daily habits (reuse GET logic)
+    // Get all active habits
+    const habitsResult = await client.execute(
+      'SELECT * FROM Habit WHERE isActive = 1'
+    );
+
+    // Get habit logs for this date
+    const logsResult = await client.execute({
+      sql: 'SELECT * FROM HabitLog WHERE date = ?',
+      args: [date]
+    });
+
+    const logsMap = new Map(logsResult.rows.map(row => [row.habitId as string, {
+      habitId: row.habitId as string,
+      date: row.date as string,
+      completed: Boolean(row.completed)
+    }]));
+
+    // Create daily habits structure
+    const habits = habitsResult.rows.map(habit => {
+      const existingLog = logsMap.get(habit.id as string);
+      return {
+        habitId: habit.id as string,
+        date,
+        completed: existingLog?.completed || false,
+        completedAt: existingLog?.completed ? new Date().toISOString() : undefined
+      };
+    });
+
+    const dailyHabits = {
+      date,
+      habits
+    };
+
     return NextResponse.json(dailyHabits);
   } catch (error) {
     console.error('Error toggling habit:', error);

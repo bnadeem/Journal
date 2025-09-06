@@ -28,13 +28,55 @@ async function initializeDatabase() {
     
     console.log('✓ Created JournalEntry table');
     
-    // Create an index for faster queries
+    // Create Habit table
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS Habit (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        category TEXT,
+        color TEXT,
+        targetFrequency TEXT,
+        isActive INTEGER DEFAULT 1,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      )
+    `);
+    
+    console.log('✓ Created Habit table');
+    
+    // Create HabitLog table
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS HabitLog (
+        id TEXT PRIMARY KEY,
+        habitId TEXT NOT NULL,
+        date TEXT NOT NULL,
+        completed INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL,
+        UNIQUE(habitId, date),
+        FOREIGN KEY (habitId) REFERENCES Habit(id) ON DELETE CASCADE
+      )
+    `);
+    
+    console.log('✓ Created HabitLog table');
+    
+    // Create indexes for faster queries
     await client.execute(`
       CREATE INDEX IF NOT EXISTS idx_journal_date 
       ON JournalEntry (year, month, day)
     `);
     
-    console.log('✓ Created date index');
+    await client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_habit_log_date 
+      ON HabitLog (date)
+    `);
+    
+    await client.execute(`
+      CREATE INDEX IF NOT EXISTS idx_habit_log_habit_date 
+      ON HabitLog (habitId, date)
+    `);
+    
+    console.log('✓ Created indexes');
     
     // Check if we have any existing entries
     const result = await client.execute('SELECT COUNT(*) as count FROM JournalEntry');
