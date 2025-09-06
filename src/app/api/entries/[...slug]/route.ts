@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import client from '@/lib/libsql';
 import { MONTH_NAMES } from '@/types/journal';
 
 interface Params {
@@ -29,15 +29,12 @@ export async function GET(
       );
     }
 
-    const entry = await prisma.journalEntry.findUnique({
-      where: {
-        year_month_day: {
-          year: parseInt(year),
-          month: month as any,
-          day: parseInt(day)
-        }
-      }
+    const result = await client.execute({
+      sql: 'SELECT * FROM JournalEntry WHERE year = ? AND month = ? AND day = ?',
+      args: [parseInt(year), month, parseInt(day)]
     });
+
+    const entry = result.rows[0] || null;
     
     if (!entry) {
       return NextResponse.json(
@@ -47,14 +44,14 @@ export async function GET(
     }
 
     // Parse frontmatter if it exists
-    const frontmatter = entry.frontmatter ? JSON.parse(entry.frontmatter) : {};
+    const frontmatter = entry.frontmatter ? JSON.parse(entry.frontmatter as string) : {};
 
     return NextResponse.json({ 
       entry: {
-        year: entry.year.toString(),
-        month: entry.month,
-        day: entry.day.toString(),
-        content: entry.content,
+        year: String(entry.year),
+        month: entry.month as string,
+        day: String(entry.day),
+        content: entry.content as string,
         frontmatter
       }
     });
@@ -100,37 +97,54 @@ export async function PUT(
       );
     }
 
-    // Upsert the journal entry
-    const entry = await prisma.journalEntry.upsert({
-      where: {
-        year_month_day: {
-          year: parseInt(year),
-          month: month as any,
-          day: parseInt(day)
-        }
-      },
-      update: {
-        content,
-        frontmatter: frontmatter && Object.keys(frontmatter).length > 0 ? JSON.stringify(frontmatter) : null,
-        updatedAt: new Date()
-      },
-      create: {
+    const now = new Date().toISOString();
+    const frontmatterStr = frontmatter && Object.keys(frontmatter).length > 0 ? JSON.stringify(frontmatter) : null;
+
+    // Check if entry exists
+    const existingResult = await client.execute({
+      sql: 'SELECT id FROM JournalEntry WHERE year = ? AND month = ? AND day = ?',
+      args: [parseInt(year), month, parseInt(day)]
+    });
+
+    let entry;
+    if (existingResult.rows.length > 0) {
+      // Update existing entry
+      await client.execute({
+        sql: 'UPDATE JournalEntry SET content = ?, frontmatter = ?, updatedAt = ? WHERE year = ? AND month = ? AND day = ?',
+        args: [content, frontmatterStr, now, parseInt(year), month, parseInt(day)]
+      });
+      
+      entry = {
         year: parseInt(year),
-        month: month as any,
+        month,
         day: parseInt(day),
         content,
-        frontmatter: frontmatter && Object.keys(frontmatter).length > 0 ? JSON.stringify(frontmatter) : null
-      }
-    });
+        frontmatter: frontmatterStr
+      };
+    } else {
+      // Create new entry
+      await client.execute({
+        sql: 'INSERT INTO JournalEntry (id, year, month, day, content, frontmatter, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [crypto.randomUUID(), parseInt(year), month, parseInt(day), content, frontmatterStr, now, now]
+      });
+      
+      entry = {
+        year: parseInt(year),
+        month,
+        day: parseInt(day),
+        content,
+        frontmatter: frontmatterStr
+      };
+    }
 
     // Return the entry in expected format
     return NextResponse.json({ 
       entry: {
-        year: entry.year.toString(),
-        month: entry.month,
-        day: entry.day.toString(),
-        content: entry.content,
-        frontmatter: entry.frontmatter ? JSON.parse(entry.frontmatter) : {}
+        year: String(entry.year),
+        month: entry.month as string,
+        day: String(entry.day),
+        content: entry.content as string,
+        frontmatter: entry.frontmatter ? JSON.parse(entry.frontmatter as string) : {}
       }
     });
 
@@ -166,14 +180,9 @@ export async function DELETE(
       );
     }
 
-    await prisma.journalEntry.delete({
-      where: {
-        year_month_day: {
-          year: parseInt(year),
-          month: month as any,
-          day: parseInt(day)
-        }
-      }
+    await client.execute({
+      sql: 'DELETE FROM JournalEntry WHERE year = ? AND month = ? AND day = ?',
+      args: [parseInt(year), month, parseInt(day)]
     });
 
     return NextResponse.json({ success: true });

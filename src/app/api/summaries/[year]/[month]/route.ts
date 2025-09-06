@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import client from '@/lib/libsql';
 import { MONTH_NAMES } from '@/types/journal';
 
 interface Params {
@@ -9,7 +9,7 @@ interface Params {
 
 // GET /api/summaries/[year]/[month] - Get monthly summary
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<Params> }
 ) {
   try {
@@ -22,14 +22,12 @@ export async function GET(
       );
     }
 
-    const summary = await prisma.monthlySummary.findUnique({
-      where: {
-        year_month: {
-          year: parseInt(year),
-          month: month as any
-        }
-      }
+    const result = await client.execute({
+      sql: 'SELECT * FROM MonthlySummary WHERE year = ? AND month = ?',
+      args: [parseInt(year), month]
     });
+
+    const summary = result.rows[0] || null;
     
     if (!summary) {
       return NextResponse.json(
@@ -40,11 +38,11 @@ export async function GET(
 
     return NextResponse.json({ 
       summary: {
-        year: summary.year.toString(),
-        month: summary.month,
-        content: summary.content,
-        createdAt: summary.createdAt,
-        updatedAt: summary.updatedAt
+        year: String(summary.year),
+        month: summary.month as string,
+        content: summary.content as string,
+        createdAt: summary.createdAt as string,
+        updatedAt: summary.updatedAt as string
       }
     });
 
@@ -81,31 +79,50 @@ export async function PUT(
       );
     }
 
-    const summary = await prisma.monthlySummary.upsert({
-      where: {
-        year_month: {
-          year: parseInt(year),
-          month: month as any
-        }
-      },
-      update: {
-        content,
-        updatedAt: new Date()
-      },
-      create: {
-        year: parseInt(year),
-        month: month as any,
-        content
-      }
+    const now = new Date().toISOString();
+
+    // Check if summary exists
+    const existingResult = await client.execute({
+      sql: 'SELECT id FROM MonthlySummary WHERE year = ? AND month = ?',
+      args: [parseInt(year), month]
     });
+
+    let summary;
+    if (existingResult.rows.length > 0) {
+      // Update existing summary
+      await client.execute({
+        sql: 'UPDATE MonthlySummary SET content = ?, updatedAt = ? WHERE year = ? AND month = ?',
+        args: [content, now, parseInt(year), month]
+      });
+      
+      const updatedResult = await client.execute({
+        sql: 'SELECT * FROM MonthlySummary WHERE year = ? AND month = ?',
+        args: [parseInt(year), month]
+      });
+      
+      summary = updatedResult.rows[0];
+    } else {
+      // Create new summary
+      await client.execute({
+        sql: 'INSERT INTO MonthlySummary (id, year, month, content, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+        args: [crypto.randomUUID(), parseInt(year), month, content, now, now]
+      });
+      
+      const newResult = await client.execute({
+        sql: 'SELECT * FROM MonthlySummary WHERE year = ? AND month = ?',
+        args: [parseInt(year), month]
+      });
+      
+      summary = newResult.rows[0];
+    }
 
     return NextResponse.json({ 
       summary: {
-        year: summary.year.toString(),
-        month: summary.month,
-        content: summary.content,
-        createdAt: summary.createdAt,
-        updatedAt: summary.updatedAt
+        year: String(summary.year),
+        month: summary.month as string,
+        content: summary.content as string,
+        createdAt: summary.createdAt as string,
+        updatedAt: summary.updatedAt as string
       }
     });
 
