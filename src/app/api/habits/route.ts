@@ -47,16 +47,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const habit = await prisma.habit.create({
-      data: {
+    const now = new Date().toISOString();
+    const result = await client.execute({
+      sql: 'INSERT INTO Habit (id, name, description, category, color, targetFrequency, isActive, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      args: [
+        crypto.randomUUID(),
         name,
-        description: description || '',
+        description || '',
         category,
         color,
         targetFrequency,
-        isActive: isActive !== undefined ? isActive : true,
-      }
+        isActive !== undefined ? isActive : true,
+        now,
+        now
+      ]
     });
+
+    const habit = {
+      id: result.lastInsertRowid,
+      name,
+      description: description || '',
+      category,
+      color,
+      targetFrequency,
+      isActive: isActive !== undefined ? isActive : true,
+      createdAt: now,
+      updatedAt: now
+    };
 
     return NextResponse.json(habit, { status: 201 });
   } catch (error) {
@@ -83,10 +100,42 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const habit = await prisma.habit.update({
-      where: { id },
-      data: updates
+    const now = new Date().toISOString();
+    const updateFields = [];
+    const args = [];
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      if (key !== 'id') {
+        updateFields.push(`${key} = ?`);
+        args.push(value);
+      }
     });
+    
+    updateFields.push('updatedAt = ?');
+    args.push(now);
+    args.push(id);
+
+    await client.execute({
+      sql: `UPDATE Habit SET ${updateFields.join(', ')} WHERE id = ?`,
+      args
+    });
+
+    const result = await client.execute({
+      sql: 'SELECT * FROM Habit WHERE id = ?',
+      args: [id]
+    });
+
+    const habit = result.rows[0] ? {
+      id: result.rows[0].id,
+      name: result.rows[0].name,
+      description: result.rows[0].description || '',
+      category: result.rows[0].category,
+      color: result.rows[0].color,
+      targetFrequency: result.rows[0].targetFrequency,
+      isActive: Boolean(result.rows[0].isActive),
+      createdAt: result.rows[0].createdAt,
+      updatedAt: result.rows[0].updatedAt
+    } : null;
 
     return NextResponse.json(habit);
   } catch (error) {
@@ -110,8 +159,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.habit.delete({
-      where: { id }
+    await client.execute({
+      sql: 'DELETE FROM Habit WHERE id = ?',
+      args: [id]
     });
 
     return NextResponse.json({ success: true });
