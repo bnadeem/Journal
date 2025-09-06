@@ -28,7 +28,18 @@ export default function DayDetailModal({
 
   useEffect(() => {
     loadDayHabits();
-  }, [date, habits]);
+  }, [date]); // Only reload when date changes
+  
+  // Separate effect for when habits list structure changes (add/remove habits)
+  // This uses a stable reference check to avoid reloading on every update
+  useEffect(() => {
+    const habitIds = habits.map(h => h.id).sort().join(',');
+    const currentIds = dayHabits.map(h => h.habitId).sort().join(',');
+    
+    if (habitIds !== currentIds && habits.length > 0) {
+      loadDayHabits();
+    }
+  }, [habits.length, habits.map(h => h.id).join(',')]);
 
   const loadDayHabits = async () => {
     try {
