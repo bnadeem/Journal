@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a personal journal repository with both markdown entries and a Next.js web application. It contains:
 
 1. **Daily markdown entries** organized by year and month in the format `YYYY/MMM/DD.md` (e.g., `2025/Sep/4.md`)
-2. **A Next.js journal application** (`journal-app/`) that provides a web interface for managing and viewing entries
+2. **A Next.js journal application** (in root directory) that provides a web interface for managing and viewing entries
 3. **Habit tracking system** with JSON-based data storage
 4. **Templates and utilities** for consistent journal formatting
 
@@ -16,12 +16,11 @@ This is a personal journal repository with both markdown entries and a Next.js w
 │   ├── Jul/
 │   ├── Aug/
 │   └── Sep/
-├── journal-app/             # Next.js web application
-│   ├── src/
-│   │   ├── app/            # App Router pages and API routes
-│   │   ├── components/     # Reusable UI components
-│   │   ├── lib/           # Utility functions and operations
-│   │   └── types/         # TypeScript type definitions
+├── src/                     # Next.js web application source
+│   ├── app/                # App Router pages and API routes
+│   ├── components/         # Reusable UI components
+│   ├── lib/               # Utility functions and operations
+│   └── types/             # TypeScript type definitions
 ├── habits.json             # Habit tracking data
 ├── daily-template.md       # Template for new journal entries
 └── package.json            # Root package configuration
@@ -70,10 +69,10 @@ This is a personal journal repository with both markdown entries and a Next.js w
 ## Development Commands
 
 ### Journal App
-- **Development**: `cd journal-app && npm run dev` (uses Turbopack)
-- **Build**: `cd journal-app && npm run build`  
-- **Lint**: `cd journal-app && npm run lint`
-- **Start**: `cd journal-app && npm run start`
+- **Development**: `npm run dev` (uses Turbopack)
+- **Build**: `npm run build`  
+- **Lint**: `npm run lint`
+- **Start**: `npm run start`
 
 ### Dependencies
 The web application uses modern React/Next.js stack:

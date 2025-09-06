@@ -4,8 +4,8 @@ import matter from 'gray-matter';
 import { JournalEntry, MonthlySummary, MonthName, MONTH_NAMES, Habit, HabitLog, DailyHabits, HabitStats } from '@/types/journal';
 import { generateId, getExcerpt, getWordCount } from '@/lib/utils';
 
-// Get the journal root directory (parent of journal-app)
-const JOURNAL_ROOT = path.resolve(process.cwd(), '../');
+// Get the journal root directory (current working directory)
+const JOURNAL_ROOT = process.cwd();
 
 export async function getJournalRoot(): Promise<string> {
   return JOURNAL_ROOT;
