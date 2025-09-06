@@ -319,8 +319,8 @@ export const assessHabitRisk = (logs: HabitLog[], metrics: HabitPermanenceMetric
   let consecutiveMissedDays = 0;
   let daysSinceLastCompletion = 0;
   
-  // Check today and work backwards
-  for (let i = 0; i < 14; i++) { // Check last 14 days max
+  // Check yesterday and work backwards (skip today since it's not complete yet)
+  for (let i = 1; i < 15; i++) { // Start from yesterday, check last 14 days max
     const checkDate = new Date(today);
     checkDate.setDate(today.getDate() - i);
     const dateStr = checkDate.toISOString().split('T')[0];
@@ -330,8 +330,8 @@ export const assessHabitRisk = (logs: HabitLog[], metrics: HabitPermanenceMetric
     if (logEntry?.completed) {
       daysSinceLastCompletion = i;
       break;
-    } else if (i === 0 || logEntry) {
-      // Count as missed if today or if we have a log entry marked incomplete
+    } else if (logEntry) {
+      // Count as missed only if we have a log entry marked incomplete (excluding today)
       consecutiveMissedDays++;
       daysSinceLastCompletion++;
     }
