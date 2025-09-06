@@ -74,10 +74,10 @@ export default function DayDetailModal({
         return {
           habitId: habit.id,
           habitName: habit.name,
-          habitColor: habit.color,
+          habitColor: habit.color || '#3b82f6',
           completed,
           streak,
-          category: habit.category
+          category: habit.category || ''
         };
       });
       

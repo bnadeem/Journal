@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import JournalEditor from '@/components/journal/JournalEditor';
 import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
-import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
+import { MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 
 export default function EditEntryPage() {
   const router = useRouter();
@@ -88,7 +88,7 @@ export default function EditEntryPage() {
       await handleSave(newContent);
       // Navigate back to the entry view only on manual save
       router.push(`/entry/${year}/${month}/${day}`);
-    } catch (err) {
+    } catch {
       // Error already handled in handleSave
     }
   };

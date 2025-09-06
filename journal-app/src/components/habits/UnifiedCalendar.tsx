@@ -69,7 +69,7 @@ export default function UnifiedCalendar({
           return {
             habitId: habit.id,
             habitName: habit.name,
-            habitColor: habit.color,
+            habitColor: habit.color || '#3b82f6',
             completed: dayLog?.completed || false
           };
         });
@@ -141,7 +141,7 @@ export default function UnifiedCalendar({
           habits: habits.map(habit => ({
             habitId: habit.id,
             habitName: habit.name,
-            habitColor: habit.color,
+            habitColor: habit.color || '#3b82f6',
             completed: false
           })),
           totalHabits: habits.length,
@@ -281,7 +281,7 @@ export default function UnifiedCalendar({
                         onKeyDown={(e) => handleKeyDown(e, dayIndex)}
                         tabIndex={dayIndex === focusedDayIndex ? 0 : -1}
                         role="gridcell"
-                        aria-label={`${day.date.toLocaleDateString()}, ${day.habits.filter(h => h.completed && visibleHabits.includes(h.habitId)).length} of ${day.habits.filter(h => visibleHabits.includes(h.habitId)).length} habits completed${day.isToday ? ', today' : ''}`}
+                        aria-label={`${day.date.toLocaleDateString()}, ${day.habits.filter((h: HabitCompletion) => h.completed && visibleHabits.includes(h.habitId)).length} of ${day.habits.filter((h: HabitCompletion) => visibleHabits.includes(h.habitId)).length} habits completed${day.isToday ? ', today' : ''}`}
                         aria-describedby={`day-${day.date.getDate()}-details`}
                       >
                         <UnifiedCalendarDay

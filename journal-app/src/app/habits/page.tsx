@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Habit, HabitStats, HabitLog } from '@/types/journal';
+import { Habit, HabitStats } from '@/types/journal';
 import UnifiedCalendar from '@/components/habits/UnifiedCalendar';
 import HabitLegend from '@/components/habits/HabitLegend';
 import DayDetailModal from '@/components/habits/DayDetailModal';

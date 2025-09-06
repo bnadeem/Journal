@@ -162,7 +162,7 @@ export default async function MonthPage({ params }: PageProps) {
                         </svg>
                       </div>
                       <h4 className="font-medium text-gray-900 mb-2">No summary yet</h4>
-                      <p className="text-gray-600 mb-4 text-sm">Reflect on this month's entries</p>
+                      <p className="text-gray-600 mb-4 text-sm">Reflect on this month&apos;s entries</p>
                       <Link
                         href={`/summary/${year}/${month}`}
                         className="inline-flex items-center px-4 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200"

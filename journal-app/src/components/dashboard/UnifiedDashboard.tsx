@@ -6,7 +6,6 @@ import { Habit, HabitStats } from '@/types/journal';
 import DayDetailModal from '@/components/habits/DayDetailModal';
 import HabitEditModal from '@/components/habits/HabitEditModal';
 import NewEntryButton from '@/components/ui/NewEntryButton';
-import { HabitCompletion } from '@/components/habits/UnifiedCalendarDay';
 import { calculateHabitPermanence, HABIT_FORMATION_STAGES, assessHabitRisk, HabitRiskAssessment } from '@/lib/habit-permanence';
 import '@/components/habits/unified-calendar.css';
 import '@/components/habits/habit-legend.css';
@@ -18,15 +17,13 @@ interface UnifiedDashboardProps {
 
 export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
   const [habits, setHabits] = useState<Habit[]>([]);
-  const [habitStats, setHabitStats] = useState<Record<string, HabitStats>>({});
-  const [habitPermanence, setHabitPermanence] = useState<Record<string, any>>({});
+  const [, setHabitStats] = useState<Record<string, HabitStats>>({});
+  const [habitPermanence, setHabitPermanence] = useState<Record<string, unknown>>({});
   const [habitRisks, setHabitRisks] = useState<Record<string, HabitRiskAssessment>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [visibleHabits, setVisibleHabits] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
-  const [showHabitSection, setShowHabitSection] = useState(true);
   const [newHabit, setNewHabit] = useState({
     name: '',
     description: '',
@@ -46,8 +43,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
         const habitsData = await response.json();
         setHabits(habitsData);
         
-        // Set all habits as visible by default
-        setVisibleHabits(habitsData.map((h: Habit) => h.id));
+        // Process habits data
         
         // Fetch stats for each habit
         const statsPromises = habitsData.map(async (habit: Habit) => {
@@ -87,11 +83,11 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
               const logs = await logsResponse.json();
               
               const createdAtDate = new Date(habit.createdAt || habit.id);
-              const completedLogs = logs.filter((l: any) => l.completed);
+              const completedLogs = logs.filter((l: { completed: boolean }) => l.completed);
               
               let actualStartDate = createdAtDate;
               if (completedLogs.length > 0) {
-                const sortedLogs = completedLogs.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                const sortedLogs = completedLogs.sort((a: { date: string }, b: { date: string }) => new Date(a.date).getTime() - new Date(b.date).getTime());
                 const earliestLogDate = new Date(sortedLogs[0].date);
                 if (earliestLogDate < createdAtDate) {
                   actualStartDate = earliestLogDate;
@@ -108,8 +104,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
         });
         
         const permanenceResults = await Promise.all(permanencePromises);
-        const permanenceMap: Record<string, any> = {};
-        const riskMap: Record<string, HabitRiskAssessment> = {};
+        const permanenceMap: Record<string, unknown> = {};
         
         permanenceResults.forEach(({ habitId, permanence }) => {
           if (permanence) {
@@ -170,20 +165,6 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
     }
   };
 
-  const toggleHabitVisibility = (habitId: string) => {
-    setVisibleHabits(prev => 
-      prev.includes(habitId) 
-        ? prev.filter(id => id !== habitId)
-        : [...prev, habitId]
-    );
-  };
-
-  const openHabitEditor = (habitId: string) => {
-    const habit = habits.find(h => h.id === habitId);
-    if (habit) {
-      setEditingHabit(habit);
-    }
-  };
 
   const handleEditHabit = async (habitId: string, updates: Partial<Habit>) => {
     try {
@@ -206,9 +187,6 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
     }
   };
 
-  const handleDayClick = (date: Date, _dayHabits: HabitCompletion[]) => {
-    setSelectedDay(date);
-  };
 
   const handleToggleHabit = async (habitId: string, date: Date) => {
     try {
@@ -218,7 +196,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
       if (!response.ok) throw new Error('Failed to fetch current status');
       
       const logs = await response.json();
-      const currentLog = logs.find((log: any) => log.date === dateString);
+      const currentLog = logs.find((log: { date: string }) => log.date === dateString);
       const currentStatus = currentLog?.completed || false;
       
       const updateResponse = await fetch(`/api/habits/${habitId}/logs`, {
@@ -259,39 +237,6 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
     return colorMap[colorName] || colorName;
   };
 
-  const toggleHabitActive = async (habitId: string, isActive: boolean) => {
-    try {
-      const response = await fetch('/api/habits', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id: habitId, isActive }),
-      });
-
-      if (response.ok) {
-        fetchHabits();
-      }
-    } catch (error) {
-      console.error('Error updating habit:', error);
-    }
-  };
-
-  const deleteHabit = async (habitId: string) => {
-    if (confirm('Are you sure you want to delete this habit?')) {
-      try {
-        const response = await fetch(`/api/habits?id=${habitId}`, {
-          method: 'DELETE',
-        });
-
-        if (response.ok) {
-          fetchHabits();
-        }
-      } catch (error) {
-        console.error('Error deleting habit:', error);
-      }
-    }
-  };
 
   if (isLoading) {
     return (
@@ -332,7 +277,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
           {Object.values(habitRisks).some((risk) => risk.riskLevel !== 'safe') && (
             <div className="mb-8">
               {Object.entries(habitRisks)
-                .filter(([_, risk]) => risk.riskLevel !== 'safe')
+                .filter(([, risk]) => risk.riskLevel !== 'safe')
                 .sort(([,a], [,b]) => b.urgencyScore - a.urgencyScore)
                 .slice(0, 3) // Show only top 3 most urgent
                 .map(([habitId, risk]) => {
@@ -439,7 +384,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
                     {Object.values(habitPermanence).length > 0 
-                      ? Math.round(Object.values(habitPermanence).reduce((acc: number, perm: any) => acc + (perm?.automaticityScore || 0), 0) / Object.values(habitPermanence).length)
+                      ? Math.round(Object.values(habitPermanence).reduce((acc: number, perm: unknown) => acc + ((perm as { automaticityScore?: number })?.automaticityScore || 0), 0) / Object.values(habitPermanence).length)
                       : 0}%
                   </p>
                   <p className="text-gray-600 text-sm">Avg Automaticity</p>
@@ -454,7 +399,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
-                    {Object.values(habitPermanence).filter((perm: any) => perm?.permanenceStage === 'automatic').length}
+                    {Object.values(habitPermanence).filter((perm: unknown) => (perm as { permanenceStage?: string })?.permanenceStage === 'automatic').length}
                   </p>
                   <p className="text-gray-600 text-sm">Permanent Habits</p>
                 </div>
@@ -551,7 +496,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
                       </svg>
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Today's Habits</h2>
+                      <h2 className="text-lg font-semibold text-gray-900">Today&apos;s Habits</h2>
                       <p className="text-gray-600 text-sm">Track your daily habit progress</p>
                     </div>
                   </div>
@@ -595,7 +540,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
                     {habits.filter(h => h.isActive).slice(0, 5).map((habit) => {
                       const permanence = habitPermanence[habit.id];
                       const risk = habitRisks[habit.id];
-                      const currentStage = permanence ? HABIT_FORMATION_STAGES.find(s => s.name.toLowerCase() === permanence.permanenceStage) || HABIT_FORMATION_STAGES[0] : HABIT_FORMATION_STAGES[0];
+                      const currentStage = permanence ? HABIT_FORMATION_STAGES.find(s => s.name.toLowerCase() === (permanence as { permanenceStage?: string })?.permanenceStage) || HABIT_FORMATION_STAGES[0] : HABIT_FORMATION_STAGES[0];
                       
                       return (
                         <div
@@ -609,9 +554,9 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
                             />
                             <div>
                               <h4 className="font-medium text-gray-900">{habit.name}</h4>
-                              {permanence && (
+                              {!!(permanence && (permanence as { automaticityScore?: number })?.automaticityScore !== undefined) && (
                                 <p className="text-sm text-gray-600">
-                                  {currentStage.name} • {Math.round(permanence.automaticityScore)}% automatic
+                                  {currentStage.name} • {Math.round((permanence as { automaticityScore?: number })?.automaticityScore || 0)}% automatic
                                 </p>
                               )}
                             </div>
