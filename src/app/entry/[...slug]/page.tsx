@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { readEntry, getAdjacentEntries } from '@/lib/file-operations';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { formatDate } from '@/lib/utils';
 import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
@@ -25,8 +24,23 @@ export default async function EntryPage({ params }: PageProps) {
     );
   }
 
-  const entry = await readEntry(year, month as MonthName, day);
-  const { prevEntry, nextEntry } = await getAdjacentEntries(year, month as MonthName, day);
+  // Fetch entry from database API
+  const entryRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entries/${year}/${month}/${day}`, {
+    cache: 'no-store'
+  });
+  
+  let entry = null;
+  let entryContent = '';
+  let wordCount = 0;
+  
+  if (entryRes.ok) {
+    const data = await entryRes.json();
+    entry = data.entry;
+    entryContent = entry.content || '';
+    wordCount = entryContent.split(/\s+/).filter(word => word.length > 0).length;
+  }
+  
+  // Adjacent entries functionality removed for database migration simplicity
 
   if (!entry) {
     return (
@@ -71,7 +85,7 @@ export default async function EntryPage({ params }: PageProps) {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{formatDate(entryDate)}</h1>
-                <p className="text-gray-600 text-sm">{entry.wordCount} words • {MONTH_FULL_NAMES[month as MonthName]} {day}, {year}</p>
+                <p className="text-gray-600 text-sm">{wordCount} words • {MONTH_FULL_NAMES[month as MonthName]} {day}, {year}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -132,7 +146,7 @@ export default async function EntryPage({ params }: PageProps) {
                       
                       {/* Horizontal lines */}
                       <div className="space-y-6">
-                        {Array.from({ length: Math.max(20, Math.ceil(entry.content.split('\n').length * 1.5)) }, (_, i) => (
+                        {Array.from({ length: Math.max(20, Math.ceil(entryContent.split('\n').length * 1.5)) }, (_, i) => (
                           <div key={i} className="h-px bg-blue-100 opacity-30"></div>
                         ))}
                       </div>
@@ -141,7 +155,7 @@ export default async function EntryPage({ params }: PageProps) {
                     {/* Content */}
                     <div className="relative pl-16 pr-4 py-2">
                       <div className="font-kalam text-gray-800 text-lg leading-6 whitespace-pre-wrap">
-                        {entry.content}
+                        {entryContent}
                       </div>
                     </div>
                   </div>
@@ -161,33 +175,9 @@ export default async function EntryPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Navigation between entries */}
+          {/* Navigation between entries - Simplified without adjacent navigation */}
           <div className="mt-8 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex justify-between items-center">
-              {/* Previous Entry */}
-              {prevEntry ? (
-                <Link
-                  href={`/entry/${prevEntry.year}/${prevEntry.month}/${prevEntry.day}`}
-                  className="flex items-center px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 border border-gray-200 hover:border-blue-200"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  <div className="text-left">
-                    <div className="text-xs text-gray-500">Previous Entry</div>
-                    <div className="font-medium">{MONTH_FULL_NAMES[prevEntry.month as MonthName]} {prevEntry.day}, {prevEntry.year}</div>
-                  </div>
-                </Link>
-              ) : (
-                <div className="invisible flex items-center px-4 py-3">
-                  <div className="w-4 h-4 mr-2"></div>
-                  <div className="text-left">
-                    <div className="text-xs">Previous Entry</div>
-                    <div className="font-medium">No previous entry</div>
-                  </div>
-                </div>
-              )}
-
+            <div className="flex justify-center">
               {/* Back to Month */}
               <Link
                 href={`/month/${year}/${month}`}
@@ -195,30 +185,6 @@ export default async function EntryPage({ params }: PageProps) {
               >
                 ← {MONTH_FULL_NAMES[month as MonthName]} {year}
               </Link>
-
-              {/* Next Entry */}
-              {nextEntry ? (
-                <Link
-                  href={`/entry/${nextEntry.year}/${nextEntry.month}/${nextEntry.day}`}
-                  className="flex items-center px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 border border-gray-200 hover:border-blue-200"
-                >
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500">Next Entry</div>
-                    <div className="font-medium">{MONTH_FULL_NAMES[nextEntry.month as MonthName]} {nextEntry.day}, {nextEntry.year}</div>
-                  </div>
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              ) : (
-                <div className="invisible flex items-center px-4 py-3">
-                  <div className="text-right">
-                    <div className="text-xs">Next Entry</div>
-                    <div className="font-medium">No next entry</div>
-                  </div>
-                  <div className="w-4 h-4 ml-2"></div>
-                </div>
-              )}
             </div>
           </div>
         </div>

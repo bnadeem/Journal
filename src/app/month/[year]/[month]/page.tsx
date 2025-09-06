@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { getMonthEntries, readSummary } from '@/lib/file-operations';
 import { MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { ReactMarkdown } from '@/lib/markdown';
 import NewEntryButton from '@/components/ui/NewEntryButton';
@@ -12,10 +11,19 @@ export default async function MonthPage({ params }: PageProps) {
   const { year, month } = await params;
   const monthName = month as MonthName;
   
-  const [entries, summary] = await Promise.all([
-    getMonthEntries(year, monthName),
-    readSummary(year, monthName)
-  ]);
+  // Fetch entries from database API
+  const entriesRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entries?year=${year}&month=${month}`, {
+    cache: 'no-store'
+  });
+  
+  let entries: any[] = [];
+  if (entriesRes.ok) {
+    const data = await entriesRes.json();
+    entries = data.entries || [];
+  }
+  
+  // For now, we'll skip summary functionality as it requires separate API implementation
+  const summary = null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -94,16 +102,16 @@ export default async function MonthPage({ params }: PageProps) {
                             </div>
                             <div className="flex items-center space-x-3">
                               <div className="text-sm text-gray-500 bg-white px-2 py-1 rounded-full">
-                                {entry.wordCount} words
+                                {entry.content ? entry.content.split(/\s+/).filter((word: string) => word.length > 0).length : 0} words
                               </div>
                               <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </div>
                           </div>
-                          {entry.excerpt && (
+                          {entry.content && (
                             <p className="text-gray-600 text-sm line-clamp-2 group-hover:text-blue-600 transition-colors">
-                              {entry.excerpt}
+                              {entry.content.slice(0, 200)}...
                             </p>
                           )}
                         </Link>
@@ -149,28 +157,16 @@ export default async function MonthPage({ params }: PageProps) {
                 </div>
                 
                 <div className="p-6">
-                  {summary ? (
-                    <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700">
-                      <ReactMarkdown>{summary.content}</ReactMarkdown>
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 text-gray-400">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} 
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 mx-auto mb-4 text-gray-400">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} 
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <h4 className="font-medium text-gray-900 mb-2">No summary yet</h4>
-                      <p className="text-gray-600 mb-4 text-sm">Reflect on this month&apos;s entries</p>
-                      <Link
-                        href={`/summary/${year}/${month}`}
-                        className="inline-flex items-center px-4 py-2 text-sm bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200"
-                      >
-                        Create Summary
-                      </Link>
-                    </div>
-                  )}
+                    <h4 className="font-medium text-gray-900 mb-2">Summary feature temporarily disabled</h4>
+                    <p className="text-gray-600 mb-4 text-sm">Monthly summaries will be re-enabled in a future update</p>
+                  </div>
                 </div>
               </div>
             </div>

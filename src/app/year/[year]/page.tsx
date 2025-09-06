@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { getYearMonths } from '@/lib/file-operations';
 import { MONTH_FULL_NAMES } from '@/types/journal';
 import NewEntryButton from '@/components/ui/NewEntryButton';
 
@@ -9,7 +8,16 @@ interface PageProps {
 
 export default async function YearPage({ params }: PageProps) {
   const { year } = await params;
-  const months = await getYearMonths(year);
+  // Fetch months from database API
+  const monthsRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/entries?year=${year}`, {
+    cache: 'no-store'
+  });
+  
+  let months: string[] = [];
+  if (monthsRes.ok) {
+    const data = await monthsRes.json();
+    months = data.months || [];
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -76,7 +84,7 @@ export default async function YearPage({ params }: PageProps) {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-xl font-bold text-gray-900 group-hover:text-blue-600">
-                          {MONTH_FULL_NAMES[month]}
+                          {MONTH_FULL_NAMES[month as keyof typeof MONTH_FULL_NAMES]}
                         </div>
                         <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
