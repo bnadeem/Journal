@@ -99,22 +99,23 @@ export default function DayDetailModal({
       // Optimistic update
       setDayHabits(prev => prev.map(habit => 
         habit.habitId === habitId 
-          ? { ...habit, completed: !habit.completed }
+          ? { 
+              ...habit, 
+              completed: !habit.completed,
+              // Optimistically update streak
+              streak: !habit.completed ? habit.streak + 1 : Math.max(0, habit.streak - 1)
+            }
           : habit
       ));
       
       await onToggleHabit(habitId, date);
       
-      // Reload to get updated streak
-      await loadDayHabits();
+      // Don't reload here - let parent component handle the updates
+      // The optimistic update should be sufficient for immediate feedback
     } catch (error) {
       console.error('Error toggling habit:', error);
       // Revert optimistic update
-      setDayHabits(prev => prev.map(habit => 
-        habit.habitId === habitId 
-          ? { ...habit, completed: !habit.completed }
-          : habit
-      ));
+      await loadDayHabits(); // Only reload on error to get correct state
     } finally {
       setUpdatingHabits(prev => {
         const next = new Set(prev);

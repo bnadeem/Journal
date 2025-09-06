@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Habit, HabitStats } from '@/types/journal';
 import DayDetailModal from '@/components/habits/DayDetailModal';
@@ -24,6 +24,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [newHabit, setNewHabit] = useState({
     name: '',
     description: '',
@@ -34,6 +35,13 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
 
   useEffect(() => {
     fetchHabits();
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
   }, []);
 
   const fetchHabits = async () => {
@@ -192,6 +200,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
     try {
       const dateString = date.toISOString().split('T')[0];
       
+      // Get current status efficiently
       const response = await fetch(`/api/habits/${habitId}/logs?startDate=${dateString}&endDate=${dateString}`);
       if (!response.ok) throw new Error('Failed to fetch current status');
       
@@ -199,6 +208,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
       const currentLog = logs.find((log: { date: string }) => log.date === dateString);
       const currentStatus = currentLog?.completed || false;
       
+      // Update the habit status
       const updateResponse = await fetch(`/api/habits/${habitId}/logs`, {
         method: 'POST',
         headers: {
@@ -214,7 +224,19 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
         throw new Error('Failed to update habit');
       }
       
-      fetchHabits();
+      // Only refresh habits data if we're showing today's data or summary views
+      // For modal interactions, the optimistic updates should be sufficient
+      const today = new Date().toISOString().split('T')[0];
+      if (dateString === today) {
+        // Debounce multiple rapid updates to prevent excessive API calls
+        if (refreshTimeoutRef.current) {
+          clearTimeout(refreshTimeoutRef.current);
+        }
+        refreshTimeoutRef.current = setTimeout(() => {
+          fetchHabits();
+          refreshTimeoutRef.current = null;
+        }, 300); // Wait 300ms for additional changes
+      }
     } catch (error) {
       console.error('Error toggling habit:', error);
       throw error;
