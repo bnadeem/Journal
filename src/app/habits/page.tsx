@@ -211,7 +211,7 @@ export default function HabitsPage() {
     }
   };
 
-  const handleDayClick = (date: Date, dayHabits: HabitCompletion[]) => {
+  const handleDayClick = (date: Date, dateString: string, dayHabits: HabitCompletion[]) => {
     setSelectedDay(date);
   };
 

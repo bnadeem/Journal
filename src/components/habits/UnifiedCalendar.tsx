@@ -7,7 +7,7 @@ import UnifiedCalendarDay, { HabitCompletion, UnifiedCalendarDayData } from './U
 interface UnifiedCalendarProps {
   habits: Habit[];
   visibleHabits: string[];
-  onDayClick: (date: Date, habits: HabitCompletion[]) => void;
+  onDayClick: (date: Date, dateString: string, habits: HabitCompletion[]) => void;
 }
 
 export default function UnifiedCalendar({ 
@@ -81,6 +81,7 @@ export default function UnifiedCalendar({
         
         calendar.push({
           date: new Date(currentDate),
+          dateString: dateString, // Pass the same dateString used for data lookup
           habits: dayHabits,
           totalHabits: habits.length,
           completionRate: habits.length > 0 ? (completedCount / habits.length) * 100 : 0,
@@ -194,7 +195,7 @@ export default function UnifiedCalendar({
         e.preventDefault();
         const day = calendarData[dayIndex];
         if (day) {
-          onDayClick(day.date, day.habits);
+          onDayClick(day.date, day.dateString, day.habits);
         }
         break;
       case 'Home':

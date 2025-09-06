@@ -68,6 +68,18 @@ export default function DayDetailModal({
         const dayLog = logs.find((log: any) => log.date === dateString);
         const completed = dayLog?.completed || false;
         
+        // Debug logging
+        if (habit.name === 'Kettlebell Swings') {
+          console.log('Kettlebell Swings debug:', {
+            habitName: habit.name,
+            dateString,
+            logsCount: logs.length,
+            dayLog,
+            completed,
+            allLogs: logs.slice(-5) // Last 5 logs
+          });
+        }
+        
         // Calculate streak up to this date
         const sortedLogs = logs
           .filter((log: any) => log.date <= dateString)

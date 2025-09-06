@@ -26,22 +26,44 @@ export default function HabitTrackerWrapper({ year, month, day }: HabitTrackerWr
     try {
       setIsLoading(true);
       
-      // Fetch all habits and daily habits in parallel
-      const [habitsResponse, dailyHabitsResponse] = await Promise.all([
-        fetch('/api/habits'),
-        fetch(`/api/habits/daily/${year}/${month}/${day}`)
-      ]);
-
-      if (habitsResponse.ok) {
-        const habitsData = await habitsResponse.json();
-        const activeHabits = habitsData.filter((habit: Habit) => habit.isActive);
-        setHabits(activeHabits);
+      // Fetch habits first
+      const habitsResponse = await fetch('/api/habits');
+      if (!habitsResponse.ok) {
+        throw new Error('Failed to fetch habits');
       }
+      
+      const habitsData = await habitsResponse.json();
+      const activeHabits = habitsData.filter((habit: Habit) => habit.isActive);
+      setHabits(activeHabits);
 
-      if (dailyHabitsResponse.ok) {
-        const dailyHabitsData = await dailyHabitsResponse.json();
-        setDailyHabits(dailyHabitsData);
-      }
+      // Convert date format to match the database format
+      const monthNumber = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1;
+      const dateString = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      // Fetch habit logs for this specific date using the same API as calendar
+      const habitLogs = await Promise.all(
+        activeHabits.map(async (habit: Habit) => {
+          const response = await fetch(
+            `/api/habits/${habit.id}/logs?startDate=${dateString}&endDate=${dateString}`
+          );
+          if (!response.ok) {
+            throw new Error(`Failed to fetch logs for habit ${habit.name}`);
+          }
+          const logs = await response.json();
+          const dayLog = logs.find((log: any) => log.date === dateString);
+          
+          return {
+            habitId: habit.id,
+            date: dateString,
+            completed: dayLog?.completed || false
+          };
+        })
+      );
+
+      setDailyHabits({
+        date: dateString,
+        habits: habitLogs
+      });
     } catch (error) {
       console.error('Error fetching habit data:', error);
     } finally {
@@ -51,17 +73,33 @@ export default function HabitTrackerWrapper({ year, month, day }: HabitTrackerWr
 
   const handleToggleHabit = async (habitId: string) => {
     try {
-      const response = await fetch(`/api/habits/daily/${year}/${month}/${day}`, {
+      // Convert date format to match the database format
+      const monthNumber = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1;
+      const dateString = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+      // First get current status using the same API as calendar
+      const statusResponse = await fetch(`/api/habits/${habitId}/logs?startDate=${dateString}&endDate=${dateString}`);
+      if (!statusResponse.ok) throw new Error('Failed to fetch current status');
+      
+      const logs = await statusResponse.json();
+      const currentLog = logs.find((log: any) => log.date === dateString);
+      const currentStatus = currentLog?.completed || false;
+
+      // Toggle the status using the same API as calendar
+      const toggleResponse = await fetch(`/api/habits/${habitId}/logs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ habitId }),
+        body: JSON.stringify({ 
+          date: dateString, 
+          completed: !currentStatus 
+        }),
       });
 
-      if (response.ok) {
-        const updatedDailyHabits = await response.json();
-        setDailyHabits(updatedDailyHabits);
+      if (toggleResponse.ok) {
+        // Refresh the data using the same method
+        await fetchData();
       }
     } catch (error) {
       console.error('Error toggling habit:', error);

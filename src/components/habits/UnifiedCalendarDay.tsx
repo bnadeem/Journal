@@ -13,6 +13,7 @@ export interface HabitCompletion {
 
 export interface UnifiedCalendarDayData {
   date: Date;
+  dateString: string;
   habits: HabitCompletion[];
   totalHabits: number;
   completionRate: number;
@@ -23,7 +24,7 @@ interface UnifiedCalendarDayProps {
   dayData: UnifiedCalendarDayData;
   visibleHabits: string[];
   habitScores?: Record<string, HabitScore>;
-  onDayClick: (date: Date, habits: HabitCompletion[]) => void;
+  onDayClick: (date: Date, dateString: string, habits: HabitCompletion[]) => void;
 }
 
 export default function UnifiedCalendarDay({ 
@@ -46,7 +47,7 @@ export default function UnifiedCalendarDay({
   const overflowCount = Math.max(0, visibleCompletedHabits.length - maxVisibleDots);
   
   const handleClick = () => {
-    onDayClick(date, habits);
+    onDayClick(date, dayData.dateString, habits);
   };
   
   const completionRatio = habits.length > 0 ? `${visibleCompletedHabits.length}/${habits.filter(h => visibleHabits.includes(h.habitId)).length}` : '0/0';
