@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model JournalEntry {
+  id          String    @id @default(cuid())
+  year        Int
+  month       String
+  day         Int
+  content     String
+  frontmatter String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([year, month, day])
+}
+
+model Habit {
+  id              String      @id @default(cuid())
+  name            String
+  description     String?
+  category        String
+  color           String
+  targetFrequency String
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  logs            HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  date      String   // YYYY-MM-DD format
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  
+  @@unique([habitId, date])
+}
+
+model MonthlySummary {
+  id      String @id @default(cuid())
+  year    Int
+  month   String
+  content String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([year, month])
+}
