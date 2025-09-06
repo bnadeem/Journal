@@ -128,10 +128,13 @@ export const useHabitData = (): HabitData & {
         const completedToday = todayLog?.completed || false;
 
         statsMap[habit.id] = {
-          currentStreak,
+          habitId: habit.id,
+          totalDays: logs.length,
+          completedDays: logs.filter(log => log.completed).length,
+          streak: currentStreak,
           bestStreak,
           completionRate,
-          completedToday
+          lastCompleted: logs.find(log => log.completed)?.date
         };
 
         // Calculate permanence metrics
@@ -140,7 +143,7 @@ export const useHabitData = (): HabitData & {
           ? logs.reduce((earliest, log) => log.completed && log.date < earliest ? log.date : earliest, logs[0].date)
           : createdDate.toISOString().split('T')[0];
         
-        const permanenceMetrics = calculateHabitPermanence(logs, actualStartDate);
+        const permanenceMetrics = calculateHabitPermanence(logs, new Date(actualStartDate));
         permanenceMap[habit.id] = permanenceMetrics;
 
         // Calculate risk assessment
