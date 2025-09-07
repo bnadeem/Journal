@@ -71,6 +71,14 @@ export default function EnhancedHabitsDashboard({
   const [fullEditorContent, setFullEditorContent] = useState('');
   const [fullEditorDate, setFullEditorDate] = useState<Date | null>(null);
   const [savingFullEditor, setSavingFullEditor] = useState(false);
+  
+  // Mobile gesture support
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [isSwipeGesture, setIsSwipeGesture] = useState(false);
+  
+  // Analytics and insights
+  const [insights, setInsights] = useState<any>(null);
+  const [loadingInsights, setLoadingInsights] = useState(false);
 
   useEffect(() => {
     if (habits.length > 0) {
@@ -96,6 +104,13 @@ export default function EnhancedHabitsDashboard({
       setHasUnsavedChanges(false);
     }
   }, [quickEntryContent]);
+
+  // Load insights automatically
+  useEffect(() => {
+    if (habits.length > 0 && recentEntries.length > 0 && !insights) {
+      generateInsights();
+    }
+  }, [habits, recentEntries]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -331,6 +346,62 @@ export default function EnhancedHabitsDashboard({
     }
   };
 
+  // Mobile gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart({
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    });
+    setIsSwipeGesture(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = Math.abs(currentX - touchStart.x);
+    const diffY = Math.abs(currentY - touchStart.y);
+
+    // Mark as swipe gesture if significant movement
+    if (diffX > 50 || diffY > 50) {
+      setIsSwipeGesture(true);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+
+    const currentX = e.changedTouches[0].clientX;
+    const currentY = e.changedTouches[0].clientY;
+    const diffX = currentX - touchStart.x;
+    const diffY = currentY - touchStart.y;
+
+    // Swipe right to close sidebar or modals
+    if (diffX > 100 && Math.abs(diffY) < 100) {
+      if (selectedDay) {
+        setSelectedDay(null);
+      } else if (searchOpen) {
+        setSearchOpen(false);
+      } else if (fullEditorOpen) {
+        closeFullEditor();
+      }
+    }
+
+    // Swipe left to open search
+    if (diffX < -100 && Math.abs(diffY) < 100 && !selectedDay && !searchOpen && !fullEditorOpen) {
+      setSearchOpen(true);
+    }
+
+    // Swipe down to close full editor
+    if (diffY > 100 && Math.abs(diffX) < 100 && fullEditorOpen) {
+      closeFullEditor();
+    }
+
+    setTouchStart(null);
+    setIsSwipeGesture(false);
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.metaKey) {
       submitQuickEntry();
@@ -350,12 +421,270 @@ export default function EnhancedHabitsDashboard({
     return Math.round((completedToday / totalHabits) * 100);
   };
 
+  // Smart linking function - detect habit mentions in text
+  const detectHabitMentions = (text: string) => {
+    const mentions: { habitId: string; habitName: string; start: number; end: number }[] = [];
+    
+    habits.forEach(habit => {
+      const habitName = habit.name.toLowerCase();
+      const variations = [
+        habitName,
+        habitName.replace(/ing$/, ''), // "running" -> "run"
+        habitName + 'ing', // "run" -> "running"
+        habitName.replace(/e$/, 'ing'), // "exercise" -> "exercising"
+      ];
+      
+      variations.forEach(variation => {
+        const regex = new RegExp(`\\b${variation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+        let match;
+        
+        while ((match = regex.exec(text)) !== null) {
+          mentions.push({
+            habitId: habit.id,
+            habitName: habit.name,
+            start: match.index,
+            end: match.index + match[0].length
+          });
+        }
+      });
+    });
+    
+    // Sort by position and remove overlaps
+    return mentions
+      .sort((a, b) => a.start - b.start)
+      .filter((mention, index, arr) => {
+        if (index === 0) return true;
+        const prev = arr[index - 1];
+        return mention.start >= prev.end;
+      });
+  };
+
+  // Function to render text with habit links
+  const renderTextWithHabitLinks = (text: string, className: string = '') => {
+    const mentions = detectHabitMentions(text);
+    
+    if (mentions.length === 0) {
+      return <span className={className}>{text}</span>;
+    }
+    
+    const elements = [];
+    let lastIndex = 0;
+    
+    mentions.forEach((mention, index) => {
+      // Add text before mention
+      if (mention.start > lastIndex) {
+        elements.push(
+          <span key={`text-${index}`} className={className}>
+            {text.slice(lastIndex, mention.start)}
+          </span>
+        );
+      }
+      
+      // Add linked mention
+      elements.push(
+        <button
+          key={`mention-${index}`}
+          onClick={() => {
+            const habit = habits.find(h => h.id === mention.habitId);
+            if (habit) {
+              // Show habit details or toggle it
+              const today = new Date().toISOString().split('T')[0];
+              toggleHabit(habit.id, today);
+            }
+          }}
+          className={`${className} underline text-blue-600 hover:text-blue-800 font-medium cursor-pointer`}
+          title={`Click to toggle ${mention.habitName}`}
+        >
+          {text.slice(mention.start, mention.end)}
+        </button>
+      );
+      
+      lastIndex = mention.end;
+    });
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      elements.push(
+        <span key="text-end" className={className}>
+          {text.slice(lastIndex)}
+        </span>
+      );
+    }
+    
+    return <span>{elements}</span>;
+  };
+
+  // Simple sentiment analysis
+  const analyzeSentiment = (text: string): { score: number; label: string; color: string } => {
+    const positiveWords = [
+      'happy', 'good', 'great', 'amazing', 'wonderful', 'excellent', 'fantastic', 'awesome',
+      'love', 'enjoy', 'excited', 'grateful', 'blessed', 'accomplished', 'successful',
+      'proud', 'confident', 'energized', 'motivated', 'peaceful', 'calm', 'relaxed'
+    ];
+    
+    const negativeWords = [
+      'sad', 'bad', 'terrible', 'awful', 'horrible', 'hate', 'angry', 'frustrated',
+      'tired', 'exhausted', 'stressed', 'overwhelmed', 'anxious', 'worried', 'depressed',
+      'difficult', 'hard', 'struggle', 'pain', 'hurt', 'disappointed', 'failed'
+    ];
+    
+    const words = text.toLowerCase().split(/\s+/);
+    let score = 0;
+    
+    words.forEach(word => {
+      if (positiveWords.includes(word)) score += 1;
+      if (negativeWords.includes(word)) score -= 1;
+    });
+    
+    // Normalize score based on text length
+    const normalizedScore = words.length > 0 ? score / words.length * 10 : 0;
+    
+    if (normalizedScore > 0.5) return { score: normalizedScore, label: 'Positive', color: 'green' };
+    if (normalizedScore < -0.5) return { score: normalizedScore, label: 'Negative', color: 'red' };
+    return { score: normalizedScore, label: 'Neutral', color: 'gray' };
+  };
+
+  // Generate insights
+  const generateInsights = async () => {
+    setLoadingInsights(true);
+    try {
+      // Fetch recent entries for analysis
+      const response = await fetch('/api/entries?recent=true&limit=30');
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      const entries = data.recent || [];
+      
+      if (entries.length === 0) {
+        setInsights({ error: 'No entries found for analysis' });
+        return;
+      }
+      
+      // Analyze sentiment for each entry
+      const entriesWithSentiment = entries.map((entry: JournalEntry) => ({
+        ...entry,
+        sentiment: analyzeSentiment(entry.content),
+        habitMentions: detectHabitMentions(entry.content).length
+      }));
+      
+      // Calculate correlations
+      const habitCorrelations = habits.map(habit => {
+        const entriesWithHabit = entriesWithSentiment.filter((entry: any) => 
+          detectHabitMentions(entry.content).some(mention => mention.habitId === habit.id)
+        );
+        
+        if (entriesWithHabit.length === 0) return null;
+        
+        const avgSentiment = entriesWithHabit.reduce((sum: number, entry: any) => 
+          sum + entry.sentiment.score, 0) / entriesWithHabit.length;
+          
+        return {
+          habitId: habit.id,
+          habitName: habit.name,
+          mentionCount: entriesWithHabit.length,
+          avgSentiment,
+          correlation: avgSentiment > 0 ? 'positive' : avgSentiment < 0 ? 'negative' : 'neutral'
+        };
+      }).filter(Boolean);
+      
+      // Overall statistics
+      const overallSentiment = entriesWithSentiment.reduce((sum: number, entry: any) => 
+        sum + entry.sentiment.score, 0) / entriesWithSentiment.length;
+      
+      const positiveEntries = entriesWithSentiment.filter((entry: any) => entry.sentiment.score > 0).length;
+      const negativeEntries = entriesWithSentiment.filter((entry: any) => entry.sentiment.score < 0).length;
+      
+      // Generate suggestions based on patterns
+      const suggestions = [];
+      
+      // Suggestion 1: Promote positive habits
+      const bestHabit = habitCorrelations.find((h: any) => h.avgSentiment > 0.5);
+      if (bestHabit) {
+        suggestions.push({
+          type: 'promote',
+          icon: '🌟',
+          title: `Focus more on ${bestHabit.habitName}`,
+          description: `This habit consistently correlates with positive feelings. Consider increasing its frequency or exploring similar activities.`,
+          color: 'green'
+        });
+      }
+
+      // Suggestion 2: Address negative patterns
+      const negativeHabit = habitCorrelations.find((h: any) => h.avgSentiment < -0.5);
+      if (negativeHabit) {
+        suggestions.push({
+          type: 'address',
+          icon: '🔄',
+          title: `Reframe your approach to ${negativeHabit.habitName}`,
+          description: `This habit appears in entries with negative sentiment. Consider adjusting your approach or exploring what makes it challenging.`,
+          color: 'yellow'
+        });
+      }
+
+      // Suggestion 3: Journal more on good days
+      if (positiveEntries < negativeEntries * 2) {
+        suggestions.push({
+          type: 'journal',
+          icon: '📝',
+          title: 'Capture more positive moments',
+          description: `You tend to journal more during difficult times. Try writing on good days too - it can help reinforce positive patterns.`,
+          color: 'blue'
+        });
+      }
+
+      // Suggestion 4: Habit tracking consistency
+      const habitMentionRatio = entriesWithSentiment.filter((e: any) => e.habitMentions > 0).length / entries.length;
+      if (habitMentionRatio < 0.3) {
+        suggestions.push({
+          type: 'track',
+          icon: '🎯',
+          title: 'Connect habits to your reflections',
+          description: `Only ${Math.round(habitMentionRatio * 100)}% of entries mention habits. Reflecting on daily activities can reveal powerful patterns.`,
+          color: 'purple'
+        });
+      }
+
+      // Suggestion 5: Mood awareness
+      if (Math.abs(overallSentiment) < 0.1) {
+        suggestions.push({
+          type: 'awareness',
+          icon: '🧘',
+          title: 'Explore emotional depth',
+          description: `Your entries tend to be emotionally neutral. Consider exploring both highs and lows more deeply for richer self-understanding.`,
+          color: 'indigo'
+        });
+      }
+
+      setInsights({
+        totalEntries: entries.length,
+        overallSentiment,
+        positiveEntries,
+        negativeEntries,
+        habitCorrelations: habitCorrelations.sort((a: any, b: any) => b.avgSentiment - a.avgSentiment),
+        topPositiveHabits: habitCorrelations.filter((h: any) => h.avgSentiment > 0).slice(0, 3),
+        suggestions: suggestions.slice(0, 3), // Limit to top 3 suggestions
+        entriesWithSentiment: entriesWithSentiment.slice(0, 10)
+      });
+      
+    } catch (error) {
+      console.error('Error generating insights:', error);
+      setInsights({ error: 'Failed to generate insights' });
+    } finally {
+      setLoadingInsights(false);
+    }
+  };
+
   const activeHabits = habits.filter((h: Habit) => h.isActive);
   const completionPercentage = getCompletionPercentage();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div 
+      className="min-h-screen bg-gray-50"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Header with metrics strip */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -417,9 +746,9 @@ export default function EnhancedHabitsDashboard({
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Main habit calendar area */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 order-2 lg:order-1">
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -477,7 +806,7 @@ export default function EnhancedHabitsDashboard({
           </div>
 
           {/* Right sidebar with journal quick entry and recent entries */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 order-1 lg:order-2">
             <div className="space-y-6">
               {/* Quick journal entry panel */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -561,6 +890,223 @@ export default function EnhancedHabitsDashboard({
                 </div>
               </div>
 
+              {/* Daily Motivation & Insights */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-xl">✨</span>
+                  <h3 className="text-lg font-semibold text-gray-900">Today's Motivation</h3>
+                </div>
+                <div className="space-y-4">
+                  {/* Progress celebration */}
+                  {completionPercentage > 0 && (
+                    <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">🎯</span>
+                        <h4 className="font-semibold text-gray-900">Daily Progress</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-2">
+                        You've completed <strong>{completionPercentage}%</strong> of your habits today!
+                      </p>
+                      {completionPercentage === 100 ? (
+                        <p className="text-sm text-green-600 font-medium">🌟 Perfect day! You're building incredible momentum!</p>
+                      ) : completionPercentage >= 70 ? (
+                        <p className="text-sm text-blue-600 font-medium">💪 Great progress! You're so close to a perfect day!</p>
+                      ) : completionPercentage >= 30 ? (
+                        <p className="text-sm text-purple-600 font-medium">🚀 Good start! Every habit completed is a step forward!</p>
+                      ) : (
+                        <p className="text-sm text-orange-600 font-medium">🌅 New day, fresh opportunities! Your future self will thank you!</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Streak celebration */}
+                  {Object.values(habitStats).some(stat => stat.currentStreak >= 3) && (
+                    <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">🔥</span>
+                        <h4 className="font-semibold text-gray-900">Streak Power</h4>
+                      </div>
+                      {(() => {
+                        const maxStreak = Math.max(...Object.values(habitStats).map(stat => stat.currentStreak));
+                        const streakHabit = habits.find(h => habitStats[h.id]?.currentStreak === maxStreak);
+                        return (
+                          <div>
+                            <p className="text-sm text-gray-700 mb-1">
+                              <strong>{maxStreak}-day streak</strong> with <em>{streakHabit?.name}</em>!
+                            </p>
+                            <p className="text-sm text-orange-600 font-medium">
+                              {maxStreak >= 21 ? "🏆 You're in the habit formation zone!" :
+                               maxStreak >= 14 ? "⚡ Momentum building! You're creating lasting change!" :
+                               maxStreak >= 7 ? "🌱 One week strong! The habit is taking root!" :
+                               "🌟 Every day counts! You're building something amazing!"}
+                            </p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Journal encouragement */}
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">📝</span>
+                      <h4 className="font-semibold text-gray-900">Reflection Moment</h4>
+                    </div>
+                    {recentEntries.length > 0 ? (
+                      <div>
+                        <p className="text-sm text-gray-700 mb-2">
+                          Your last entry was <strong>{(() => {
+                            const lastEntry = recentEntries[0];
+                            const entryDate = new Date(`${lastEntry.year}-${new Date(`1 ${lastEntry.month} 2000`).getMonth() + 1}-${lastEntry.day}`);
+                            const daysDiff = Math.floor((new Date().getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24));
+                            return daysDiff === 0 ? 'today' : daysDiff === 1 ? 'yesterday' : `${daysDiff} days ago`;
+                          })()}</strong>
+                        </p>
+                        <p className="text-sm text-purple-600 font-medium">
+                          💭 Your thoughts shape your reality. What will you capture today?
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-sm text-gray-700 mb-2">Ready to start your journaling journey?</p>
+                        <p className="text-sm text-purple-600 font-medium">
+                          ✍️ Every great story starts with a single word. Write yours!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Habit formation science */}
+                  {activeHabits.length > 0 && (
+                    <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">🧠</span>
+                        <h4 className="font-semibold text-gray-900">Science Insight</h4>
+                      </div>
+                      <p className="text-sm text-gray-700 mb-2">
+                        You're tracking <strong>{activeHabits.length}</strong> habit{activeHabits.length !== 1 ? 's' : ''}
+                      </p>
+                      <p className="text-sm text-teal-600 font-medium">
+                        {activeHabits.length <= 3 ? 
+                          "🎯 Perfect! Research shows 1-3 habits are optimal for lasting change." :
+                          activeHabits.length <= 5 ?
+                          "💪 Ambitious! Focus on consistency over quantity for best results." :
+                          "🌟 Impressive commitment! Consider prioritizing your top 3 for maximum impact."
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Analytics & Insights */}
+              {insights && !insights.error && (
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="text-xl">📊</span>
+                    <h3 className="text-lg font-semibold text-gray-900">Personal Analytics</h3>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Overall Stats */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-green-600">{insights.positiveEntries}</div>
+                        <div className="text-sm text-green-700">Positive</div>
+                      </div>
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-red-600">{insights.negativeEntries}</div>
+                        <div className="text-sm text-red-700">Challenging</div>
+                      </div>
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-gray-600">
+                          {insights.totalEntries - insights.positiveEntries - insights.negativeEntries}
+                        </div>
+                        <div className="text-sm text-gray-700">Neutral</div>
+                      </div>
+                    </div>
+
+                    {/* Top Positive Habits */}
+                    {insights.topPositiveHabits && insights.topPositiveHabits.length > 0 && (
+                      <div>
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          🌟 Habits That Boost Your Mood
+                        </h4>
+                        <div className="grid grid-cols-1 gap-3">
+                          {insights.topPositiveHabits.slice(0, 3).map((habit: any, index: number) => (
+                            <div key={habit.habitId} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <span className="text-lg">🎯</span>
+                                <div>
+                                  <div className="font-medium text-green-900">{habit.habitName}</div>
+                                  <div className="text-sm text-green-700">{habit.mentionCount} positive mentions</div>
+                                </div>
+                              </div>
+                              <div className="text-sm text-green-600 font-medium">
+                                +{habit.avgSentiment.toFixed(1)} boost
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI Suggestions */}
+                    {insights.suggestions && insights.suggestions.length > 0 && (
+                      <div>
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          🤖 Personal Recommendations
+                        </h4>
+                        <div className="space-y-3">
+                          {insights.suggestions.slice(0, 2).map((suggestion: any, index: number) => (
+                            <div key={index} className={`p-3 rounded-lg border-l-4 ${
+                              suggestion.color === 'green' ? 'bg-green-50 border-green-400' :
+                              suggestion.color === 'yellow' ? 'bg-yellow-50 border-yellow-400' :
+                              suggestion.color === 'blue' ? 'bg-blue-50 border-blue-400' :
+                              suggestion.color === 'purple' ? 'bg-purple-50 border-purple-400' :
+                              'bg-indigo-50 border-indigo-400'
+                            }`}>
+                              <div className="flex items-start gap-3">
+                                <span className="text-lg">{suggestion.icon}</span>
+                                <div className="flex-1">
+                                  <h5 className={`font-medium text-sm ${
+                                    suggestion.color === 'green' ? 'text-green-900' :
+                                    suggestion.color === 'yellow' ? 'text-yellow-900' :
+                                    suggestion.color === 'blue' ? 'text-blue-900' :
+                                    suggestion.color === 'purple' ? 'text-purple-900' :
+                                    'text-indigo-900'
+                                  } mb-1`}>
+                                    {suggestion.title}
+                                  </h5>
+                                  <p className={`text-xs ${
+                                    suggestion.color === 'green' ? 'text-green-700' :
+                                    suggestion.color === 'yellow' ? 'text-yellow-700' :
+                                    suggestion.color === 'blue' ? 'text-blue-700' :
+                                    suggestion.color === 'purple' ? 'text-purple-700' :
+                                    'text-indigo-700'
+                                  }`}>
+                                    {suggestion.description}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {loadingInsights && (
+                      <div className="text-center py-6">
+                        <div className="inline-flex items-center gap-3 text-gray-500">
+                          <div className="w-4 h-4 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin"></div>
+                          Analyzing your patterns...
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Recent entries */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <div className="flex items-center gap-3 mb-4">
@@ -571,7 +1117,7 @@ export default function EnhancedHabitsDashboard({
                   <p className="text-gray-500 text-sm">No entries yet</p>
                 ) : (
                   <div className="space-y-3">
-                    {recentEntries.map((entry) => (
+                    {recentEntries.slice(0, 3).map((entry) => (
                       <Link
                         key={`${entry.year}-${entry.month}-${entry.day}`}
                         href={`/entry/${entry.year}/${entry.month}/${entry.day}`}
@@ -580,13 +1126,34 @@ export default function EnhancedHabitsDashboard({
                         <div className="text-sm font-medium text-gray-900 mb-1">
                           {entry.month} {entry.day}, {entry.year}
                         </div>
-                        <p className="text-xs text-gray-600 line-clamp-2">
-                          {entry.content.substring(0, 100)}...
-                        </p>
+                        <div className="text-xs text-gray-600 line-clamp-2">
+                          {renderTextWithHabitLinks(entry.content.substring(0, 100) + '...', 'text-xs text-gray-600')}
+                        </div>
                       </Link>
                     ))}
+                    {recentEntries.length > 3 && (
+                      <Link
+                        href="/year"
+                        className="block text-center py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        View all {recentEntries.length} entries →
+                      </Link>
+                    )}
                   </div>
                 )}
+              </div>
+
+              {/* Mobile gesture hints */}
+              <div className="lg:hidden bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-blue-600">👆</span>
+                  <h4 className="text-sm font-medium text-blue-900">Gesture Tips</h4>
+                </div>
+                <div className="space-y-1 text-xs text-blue-700">
+                  <p>← Swipe left to search</p>
+                  <p>→ Swipe right to close</p>
+                  <p>↓ Swipe down to close editor</p>
+                </div>
               </div>
             </div>
           </div>
@@ -734,9 +1301,9 @@ export default function EnhancedHabitsDashboard({
                           {entry.content.length} chars
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        {entry.content.substring(0, 150)}...
-                      </p>
+                      <div className="text-sm text-gray-600 line-clamp-2">
+                        {renderTextWithHabitLinks(entry.content.substring(0, 150) + '...', 'text-sm text-gray-600')}
+                      </div>
                     </Link>
                   ))}
                 </div>
@@ -834,6 +1401,7 @@ export default function EnhancedHabitsDashboard({
           </div>
         </div>
       )}
+
     </div>
   );
 }

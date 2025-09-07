@@ -356,13 +356,13 @@ Quick Actions:
 - [x] Implement command palette (Cmd+K)
 - [x] Add global search across habits and journal
 - [x] Create modal system for full-screen editors
-- [ ] Optimize for mobile gesture navigation
+- [x] Optimize for mobile gesture navigation
 
 ### **Phase 4: Advanced Integration**
-- [ ] Smart linking between habit completion and journal mentions
-- [ ] Correlation analytics between habits and journal sentiment
-- [ ] Auto-generated insights and suggestions
-- [ ] Real-time sync and optimistic updates
+- [x] Smart linking between habit completion and journal mentions
+- [x] Correlation analytics between habits and journal sentiment
+- [x] Auto-generated insights and suggestions
+- [x] Real-time sync and optimistic updates
 
 ---
 
