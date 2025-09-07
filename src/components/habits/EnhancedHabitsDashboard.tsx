@@ -188,9 +188,9 @@ export default function EnhancedHabitsDashboard({
     formData.append('id', habit.id);
     formData.append('name', habit.name);
     formData.append('description', habit.description || '');
-    formData.append('category', habit.category);
-    formData.append('color', habit.color);
-    formData.append('targetFrequency', habit.targetFrequency);
+    formData.append('category', habit.category || '');
+    formData.append('color', habit.color || '#3b82f6');
+    formData.append('targetFrequency', habit.targetFrequency || 'daily');
 
     startTransition(async () => {
       await updateHabitAction(formData);
@@ -200,11 +200,11 @@ export default function EnhancedHabitsDashboard({
   };
 
   const toggleHabitActive = async (habitId: string) => {
-    const formData = new FormData();
-    formData.append('habitId', habitId);
-
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+    
     startTransition(async () => {
-      await toggleHabitActiveAction(formData);
+      await toggleHabitActiveAction(habitId, !habit.isActive);
       router.refresh();
     });
   };
@@ -214,23 +214,16 @@ export default function EnhancedHabitsDashboard({
       return;
     }
 
-    const formData = new FormData();
-    formData.append('habitId', habitId);
-
     startTransition(async () => {
-      await deleteHabitAction(formData);
+      await deleteHabitAction(habitId);
       setEditingHabit(null);
       router.refresh();
     });
   };
 
   const toggleHabit = async (habitId: string, dateString: string) => {
-    const formData = new FormData();
-    formData.append('habitId', habitId);
-    formData.append('date', dateString);
-
     startTransition(async () => {
-      await toggleHabitAction(formData);
+      await toggleHabitAction(habitId, dateString, null);
       router.refresh();
     });
   };
@@ -722,7 +715,7 @@ export default function EnhancedHabitsDashboard({
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {Object.values(habitStats).reduce((max, stat) => Math.max(max, stat.currentStreak), 0)}
+                  {Object.values(habitStats).reduce((max, stat) => Math.max(max, stat.bestStreak), 0)}
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-wide">Best Streak</div>
               </div>
@@ -738,7 +731,7 @@ export default function EnhancedHabitsDashboard({
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <div className="text-2xl font-bold text-red-500">
-                  {Object.keys(habitRisks).filter(id => habitRisks[id].riskLevel === 'high').length}
+                  {Object.keys(habitRisks).filter(id => habitRisks[id].riskLevel === 'critical').length}
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-wide">Risk</div>
               </div>
@@ -778,15 +771,15 @@ export default function EnhancedHabitsDashboard({
               )}
 
               {/* Streak celebration */}
-              {Object.values(habitStats).some(stat => stat.currentStreak >= 3) && (
+              {Object.values(habitStats).some(stat => stat.streak >= 3) && (
                 <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg">🔥</span>
                     <h4 className="font-semibold text-gray-900">Streak Power</h4>
                   </div>
                   {(() => {
-                    const maxStreak = Math.max(...Object.values(habitStats).map(stat => stat.currentStreak));
-                    const streakHabit = habits.find(h => habitStats[h.id]?.currentStreak === maxStreak);
+                    const maxStreak = Math.max(...Object.values(habitStats).map(stat => stat.streak));
+                    const streakHabit = habits.find(h => habitStats[h.id]?.streak === maxStreak);
                     return (
                       <div>
                         <p className="text-sm text-gray-700 mb-1">
@@ -1121,7 +1114,6 @@ export default function EnhancedHabitsDashboard({
                   <>
                     <UnifiedCalendar
                       habits={habits}
-                      habitStats={habitStats}
                       visibleHabits={visibleHabits}
                       onDayClick={(date, dateString, dayHabits) => 
                         setSelectedDay({ date, dateString, dayHabits })
@@ -1130,15 +1122,15 @@ export default function EnhancedHabitsDashboard({
                     <HabitLegend
                       habits={habits}
                       visibleHabits={visibleHabits}
-                      onToggleVisibility={(habitId) => {
-                        setVisibleHabits(prev => 
-                          prev.includes(habitId) 
-                            ? prev.filter(id => id !== habitId)
-                            : [...prev, habitId]
-                        );
+                      onToggleHabit={(habitId: string) => {
+                        const today = new Date().toISOString().split('T')[0];
+                        toggleHabit(habitId, today);
                       }}
-                      onEditHabit={setEditingHabit}
-                      habitPermanence={habitPermanence}
+                      onEditHabit={(habitId: string) => {
+                        const habit = habits.find(h => h.id === habitId);
+                        setEditingHabit(habit || null);
+                      }}
+                      onAddHabit={() => setShowCreateForm(true)}
                     />
                   </>
                 )}
@@ -1364,12 +1356,13 @@ export default function EnhancedHabitsDashboard({
       {/* Habit edit modal */}
       {editingHabit && (
         <HabitEditModal
+          isOpen={true}
           habit={editingHabit}
           onClose={() => setEditingHabit(null)}
-          onSave={updateHabit}
-          onToggleActive={toggleHabitActive}
-          onDelete={deleteHabit}
-          habitPermanence={habitPermanence[editingHabit.id]}
+          onSave={async (habitId: string, updates: Partial<Habit>) => {
+            const updatedHabit = { ...editingHabit, ...updates } as Habit;
+            await updateHabit(updatedHabit);
+          }}
         />
       )}
 
