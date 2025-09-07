@@ -1,19 +1,42 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { formatDate } from '@/lib/utils';
 import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
-import { getHabitData } from '@/lib/habits';
-import client from '@/lib/libsql';
 
 interface PageProps {
   params: Promise<{ slug: string[] }>;
+}
+
+async function getEntryData(slug: string[], host: string | null, cookie: string | null) {
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const url = `${protocol}://${host}/api/entries/${slug.join('/')}`;
+
+  const res = await fetch(url, {
+    cache: 'no-store',
+    headers: {
+      cookie: cookie || '',
+    },
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      return null;
+    }
+    throw new Error(`Failed to fetch entry data: ${res.statusText}`);
+  }
+  return res.json();
 }
 
 export default async function EntryPage({ params }: PageProps) {
   const { slug } = await params;
   const [year, month, day] = slug;
 
-  const habitData = await getHabitData();
+  const headersList = headers();
+  const host = headersList.get('host');
+  const cookie = headersList.get('cookie');
+  const data = await getEntryData(slug, host, cookie);
+
 
   if (!year || !month || !day) {
     return (
@@ -28,36 +51,7 @@ export default async function EntryPage({ params }: PageProps) {
     );
   }
 
-  // Fetch entry directly from database
-  let entry = null;
-  let entryContent = '';
-  let wordCount = 0;
-  
-  try {
-    const result = await client.execute({
-      sql: 'SELECT * FROM JournalEntry WHERE year = ? AND month = ? AND day = ?',
-      args: [parseInt(year), month, parseInt(day)]
-    });
-    
-    if (result.rows.length > 0) {
-      const dbEntry = result.rows[0];
-      entry = {
-        year: String(dbEntry.year),
-        month: dbEntry.month as string,
-        day: String(dbEntry.day),
-        content: dbEntry.content as string || '',
-        frontmatter: dbEntry.frontmatter ? JSON.parse(dbEntry.frontmatter as string) : {}
-      };
-      entryContent = entry.content || '';
-      wordCount = entryContent.split(/\s+/).filter(word => word.length > 0).length;
-    }
-  } catch (error) {
-    console.error('Error fetching entry:', error);
-  }
-  
-  // Adjacent entries functionality removed for database migration simplicity
-
-  if (!entry) {
+  if (!data) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -83,6 +77,10 @@ export default async function EntryPage({ params }: PageProps) {
       </div>
     );
   }
+
+  const { entry, habitData } = data;
+  const entryContent = entry.content || '';
+  const wordCount = entryContent.split(/\s+/).filter(word => word.length > 0).length;
 
   const entryDate = `${year}-${MONTH_NAMES.indexOf(month as MonthName) + 1}-${day}`;
 

@@ -1,35 +1,40 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { MONTH_FULL_NAMES, MonthName } from '@/types/journal';
-import { ReactMarkdown } from '@/lib/markdown';
 import NewEntryButton from '@/components/ui/NewEntryButton';
-import client from '@/lib/libsql';
 
 interface PageProps {
   params: Promise<{ year: string; month: string }>;
 }
 
+async function getEntries(year: string, month: string, host: string | null, cookie: string | null): Promise<any[]> {
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  
+  const res = await fetch(`${protocol}://${host}/api/entries?year=${year}&month=${month}`, {
+    cache: 'no-store',
+    headers: {
+      cookie: cookie || '',
+    },
+  });
+
+  if (!res.ok) {
+    console.error('Failed to fetch entries', await res.text());
+    return [];
+  }
+
+  const data = await res.json();
+  return data.entries || [];
+}
+
 export default async function MonthPage({ params }: PageProps) {
   const { year, month } = await params;
   const monthName = month as MonthName;
-  
-  // Fetch entries directly from database
-  let entries: any[] = [];
-  
-  try {
-    const result = await client.execute({
-      sql: 'SELECT day, content, createdAt, updatedAt FROM JournalEntry WHERE year = ? AND month = ? ORDER BY day',
-      args: [parseInt(year), month]
-    });
 
-    entries = result.rows.map(row => ({
-      day: row.day?.toString() || '',
-      content: row.content as string || '',
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt
-    }));
-  } catch (error) {
-    console.error('Error fetching entries:', error);
-  }
+  const headersList = await headers();
+  const host = headersList.get('host');
+  const cookie = headersList.get('cookie');
+  const entries = await getEntries(year, month, host, cookie);
+
   
   // For now, we'll skip summary functionality as it requires separate API implementation
   const summary = null;

@@ -1,18 +1,29 @@
 import UnifiedDashboard from '@/components/dashboard/UnifiedDashboard';
-import client from '@/lib/libsql';
+import { headers } from 'next/headers';
 
-export default async function Home() {
-  // Fetch years directly from database (no API call needed for server-side rendering)
-  let years: string[] = [];
+async function getYears(host: string | null, cookie: string | null): Promise<string[]> {
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
   
-  try {
-    const result = await client.execute(
-      'SELECT DISTINCT year FROM JournalEntry ORDER BY year DESC'
-    );
-    years = result.rows.map(row => row.year?.toString() || '');
-  } catch (error) {
-    console.error('Error fetching years:', error);
+  const res = await fetch(`${protocol}://${host}/api/entries`, {
+    cache: 'no-store',
+    headers: {
+      cookie: cookie || '',
+    },
+  });
+
+  if (!res.ok) {
+    console.error('Failed to fetch years', await res.text());
+    return [];
   }
 
+  const data = await res.json();
+  return data.years || [];
+}
+
+export default async function Home() {
+  const headersList = headers();
+  const host = headersList.get('host');
+  const cookie = headersList.get('cookie');
+  const years = await getYears(host, cookie);
   return <UnifiedDashboard years={years} />;
 }

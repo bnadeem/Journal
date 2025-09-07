@@ -1,6 +1,6 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { MONTH_FULL_NAMES, MonthName } from '@/types/journal';
-import { getSummaryData } from '@/lib/summary';
 import SummaryEditor from '@/components/journal/SummaryEditor';
 import { Suspense } from 'react';
 
@@ -9,6 +9,25 @@ interface PageProps {
     year: string;
     month: MonthName;
   };
+}
+
+async function getSummaryData(year: string, month: MonthName, host: string | null, cookie: string | null) {
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const url = `${protocol}://${host}/api/summaries/${year}/${month}`;
+
+  const res = await fetch(url, {
+    cache: 'no-store',
+    headers: {
+      cookie: cookie || '',
+    },
+  });
+
+  if (!res.ok) {
+    console.error(`Failed to fetch summary data: ${res.statusText}`);
+    // Return default values on error
+    return { summaryContent: '', entriesCount: 0 };
+  }
+  return res.json();
 }
 
 export default async function MonthlySummaryPage({ params }: PageProps) {
@@ -27,7 +46,10 @@ export default async function MonthlySummaryPage({ params }: PageProps) {
     );
   }
 
-  const { summaryContent, entriesCount } = await getSummaryData(year, month);
+  const headersList = headers();
+  const host = headersList.get('host');
+  const cookie = headersList.get('cookie');
+  const { summaryContent, entriesCount } = await getSummaryData(year, month, host, cookie);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">

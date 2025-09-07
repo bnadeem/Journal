@@ -32,13 +32,14 @@ export async function GET(request: NextRequest) {
 
     // If both year and month, return entries for that month
     const result = await client.execute({
-      sql: 'SELECT day, createdAt, updatedAt FROM JournalEntry WHERE year = ? AND month = ? ORDER BY day',
+      sql: 'SELECT day, content, createdAt, updatedAt FROM JournalEntry WHERE year = ? AND month = ? ORDER BY day',
       args: [parseInt(year), month]
     });
 
     // Format entries to match expected structure
     const formattedEntries = result.rows.map(row => ({
       day: row.day?.toString() || '',
+      content: row.content as string || '',
       createdAt: row.createdAt,
       updatedAt: row.updatedAt
     }));

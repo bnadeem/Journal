@@ -1,26 +1,39 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { MONTH_FULL_NAMES } from '@/types/journal';
 import NewEntryButton from '@/components/ui/NewEntryButton';
-import client from '@/lib/libsql';
 
 interface PageProps {
   params: Promise<{ year: string }>;
 }
 
+async function getMonths(year: string, host: string | null, cookie: string | null): Promise<string[]> {
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  
+  const res = await fetch(`${protocol}://${host}/api/entries?year=${year}`, {
+    cache: 'no-store',
+    headers: {
+      cookie: cookie || '',
+    },
+  });
+
+  if (!res.ok) {
+    console.error('Failed to fetch months', await res.text());
+    return [];
+  }
+
+  const data = await res.json();
+  return data.months || [];
+}
+
 export default async function YearPage({ params }: PageProps) {
   const { year } = await params;
-  // Fetch months directly from database
-  let months: string[] = [];
   
-  try {
-    const result = await client.execute({
-      sql: 'SELECT DISTINCT month FROM JournalEntry WHERE year = ? ORDER BY month',
-      args: [parseInt(year)]
-    });
-    months = result.rows.map(row => row.month as string);
-  } catch (error) {
-    console.error('Error fetching months:', error);
-  }
+  const headersList = headers();
+  const host = headersList.get('host');
+  const cookie = headersList.get('cookie');
+  const months = await getMonths(year, host, cookie);
+
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import client from '@/lib/libsql';
 import { MONTH_NAMES } from '@/types/journal';
+import { getHabitData } from '@/lib/habits'; // Import habit data function
 
 interface Params {
   slug: string[];
@@ -29,12 +30,13 @@ export async function GET(
       );
     }
 
-    const result = await client.execute({
+    // Fetch journal entry
+    const entryResult = await client.execute({
       sql: 'SELECT * FROM JournalEntry WHERE year = ? AND month = ? AND day = ?',
       args: [parseInt(year), month, parseInt(day)]
     });
 
-    const entry = result.rows[0] || null;
+    const entry = entryResult.rows[0] || null;
     
     if (!entry) {
       return NextResponse.json(
@@ -46,6 +48,9 @@ export async function GET(
     // Parse frontmatter if it exists
     const frontmatter = entry.frontmatter ? JSON.parse(entry.frontmatter as string) : {};
 
+    // Fetch habit data
+    const habitData = await getHabitData();
+
     return NextResponse.json({ 
       entry: {
         year: String(entry.year),
@@ -53,7 +58,8 @@ export async function GET(
         day: String(entry.day),
         content: entry.content as string,
         frontmatter
-      }
+      },
+      habitData // Include habit data in the response
     });
 
   } catch (error) {
