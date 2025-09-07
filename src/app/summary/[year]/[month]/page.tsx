@@ -1,114 +1,18 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import JournalEditor from '@/components/journal/JournalEditor';
 import { MONTH_FULL_NAMES, MonthName } from '@/types/journal';
+import { getSummaryData } from '@/lib/summary';
+import SummaryEditor from '@/components/journal/SummaryEditor';
+import { Suspense } from 'react';
 
-export default function MonthlySummaryPage() {
-  const router = useRouter();
-  const params = useParams();
-  const [content, setContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [entriesCount, setEntriesCount] = useState(0);
-
-  const year = params.year as string;
-  const month = params.month as MonthName;
-
-  useEffect(() => {
-    if (!year || !month) return;
-
-    const fetchData = async () => {
-      try {
-        // Fetch existing summary
-        const summaryResponse = await fetch(`/api/summaries/${year}/${month}`);
-        let summaryContent = '';
-        
-        if (summaryResponse.ok) {
-          const summaryData = await summaryResponse.json();
-          summaryContent = summaryData.summary.content || '';
-        }
-
-        // Fetch entries count
-        const entriesResponse = await fetch(`/api/entries?year=${year}&month=${month}`);
-        let count = 0;
-        
-        if (entriesResponse.ok) {
-          const entriesData = await entriesResponse.json();
-          count = entriesData.entries?.length || 0;
-        }
-
-        // If no existing summary, provide a template
-        if (!summaryContent && count > 0) {
-          summaryContent = `# ${MONTH_FULL_NAMES[month]} ${year} Summary
-
-## Key Themes
-
-### [Theme 1]
-- 
-
-### [Theme 2]
-- 
-
-## Notable Entries
-- **[Date]**: [Brief description]
-
-## Overall Reflection
-${count} entries this month. 
-
-## Looking Forward
-`;
-        }
-
-        setContent(summaryContent);
-        setEntriesCount(count);
-      } catch (err) {
-        setError('Failed to load summary data');
-        console.error('Error fetching summary:', err);
-      } finally {
-        setIsFetching(false);
-      }
-    };
-
-    fetchData();
-  }, [year, month]);
-
-  const handleSave = async (newContent: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/summaries/${year}/${month}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: newContent,
-          themes: [] // TODO: Extract themes from content
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save summary');
-      }
-
-      // Navigate back to the month view
-      router.push(`/month/${year}/${month}`);
-    } catch (err) {
-      setError('Failed to save summary');
-      console.error('Error saving summary:', err);
-    } finally {
-      setIsLoading(false);
-    }
+interface PageProps {
+  params: { 
+    year: string;
+    month: MonthName;
   };
+}
 
-  const handleCancel = () => {
-    router.push(`/month/${year}/${month}`);
-  };
+export default async function MonthlySummaryPage({ params }: PageProps) {
+  const { year, month } = params;
 
   if (!year || !month) {
     return (
@@ -123,18 +27,7 @@ ${count} entries this month.
     );
   }
 
-  if (isFetching) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading summary...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const title = `${MONTH_FULL_NAMES[month]} ${year} Summary`;
+  const { summaryContent, entriesCount } = await getSummaryData(year, month);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
@@ -191,22 +84,14 @@ ${count} entries this month.
             )}
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Summary Editor */}
-          <JournalEditor
-            initialContent={content}
-            title={title}
-            onSave={handleSave}
-            onCancel={handleCancel}
-            isLoading={isLoading}
-            showPreview={false}
-          />
+          <Suspense fallback={<div>Loading editor...</div>}>
+            <SummaryEditor 
+              year={year} 
+              month={month} 
+              initialContent={summaryContent} 
+              entriesCount={entriesCount} 
+            />
+          </Suspense>
         </div>
       </div>
     </div>

@@ -11,107 +11,28 @@ interface DayHabit extends HabitCompletion {
 
 interface DayDetailModalProps {
   date: Date;
+  dateString: string;
   habits: Habit[];
+  initialDayHabits: DayHabit[];
   onClose: () => void;
   onToggleHabit: (habitId: string, date: Date) => Promise<void>;
 }
 
 export default function DayDetailModal({ 
   date, 
-  habits, 
+  dateString,
+  habits,
+  initialDayHabits,
   onClose, 
   onToggleHabit 
 }: DayDetailModalProps) {
-  const [dayHabits, setDayHabits] = useState<DayHabit[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [dayHabits, setDayHabits] = useState<DayHabit[]>(initialDayHabits);
+  const [isLoading, setIsLoading] = useState(false);
   const [updatingHabits, setUpdatingHabits] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadDayHabits();
-  }, [date]); // Only reload when date changes
-  
-  // Separate effect for when habits list structure changes (add/remove habits)
-  // This uses a stable reference check to avoid reloading on every update
-  useEffect(() => {
-    const habitIds = habits.map(h => h.id).sort().join(',');
-    const currentIds = dayHabits.map(h => h.habitId).sort().join(',');
-    
-    if (habitIds !== currentIds && habits.length > 0) {
-      loadDayHabits();
-    }
-  }, [habits.length, habits.map(h => h.id).join(',')]);
-
-  const loadDayHabits = async () => {
-    try {
-      setIsLoading(true);
-      const dateString = date.toISOString().split('T')[0];
-      
-      const habitPromises = habits.map(async (habit) => {
-        // Fetch recent logs to calculate streak and current status
-        const thirtyDaysAgo = new Date(date);
-        thirtyDaysAgo.setDate(date.getDate() - 30);
-        
-        const startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        const endDate = dateString;
-        
-        const response = await fetch(
-          `/api/habits/${habit.id}/logs?startDate=${startDate}&endDate=${endDate}`
-        );
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch logs for habit ${habit.name}`);
-        }
-        
-        const logs = await response.json();
-        
-        // Find completion status for this specific date
-        const dayLog = logs.find((log: any) => log.date === dateString);
-        const completed = dayLog?.completed || false;
-        
-        // Debug logging
-        if (habit.name === 'Kettlebell Swings') {
-          console.log('Kettlebell Swings debug:', {
-            habitName: habit.name,
-            dateString,
-            logsCount: logs.length,
-            dayLog,
-            completed,
-            allLogs: logs.slice(-5) // Last 5 logs
-          });
-        }
-        
-        // Calculate streak up to this date
-        const sortedLogs = logs
-          .filter((log: any) => log.date <= dateString)
-          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        let streak = 0;
-        for (const log of sortedLogs) {
-          if (log.completed) {
-            streak++;
-          } else {
-            break;
-          }
-        }
-        
-        return {
-          habitId: habit.id,
-          habitName: habit.name,
-          habitColor: habit.color || '#3b82f6',
-          completed,
-          streak,
-          category: habit.category || ''
-        };
-      });
-      
-      const results = await Promise.all(habitPromises);
-      setDayHabits(results);
-    } catch (error) {
-      console.error('Error loading day habits:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setDayHabits(initialDayHabits);
+  }, [initialDayHabits]);
 
   const handleToggleHabit = async (habitId: string) => {
     if (updatingHabits.has(habitId)) return;
@@ -132,13 +53,10 @@ export default function DayDetailModal({
       ));
       
       await onToggleHabit(habitId, date);
-      
-      // Reload to ensure we have the latest data from database
-      await loadDayHabits();
     } catch (error) {
       console.error('Error toggling habit:', error);
       // Revert optimistic update
-      await loadDayHabits(); // Only reload on error to get correct state
+      setDayHabits(initialDayHabits);
     } finally {
       setUpdatingHabits(prev => {
         const next = new Set(prev);

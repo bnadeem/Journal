@@ -24,12 +24,12 @@ async function checkSept7Habits() {
     
     // Also check if we have any habits for kettlebell swings specifically
     const habitResult = await client.execute(
-      "SELECT * FROM Habit WHERE name LIKE '%ettlebell%' OR name LIKE '%swing%'"
+      "SELECT *, isActive FROM Habit WHERE name LIKE '%ettlebell%' OR name LIKE '%swing%'"
     );
     
     console.log(`\nFound ${habitResult.rows.length} kettlebell-related habits:`);
     for (const row of habitResult.rows) {
-      console.log(`- ${row.name} (ID: ${row.id})`);
+      console.log(`- ${row.name} (ID: ${row.id}, isActive: ${row.isActive})`);
       
       // Check logs for this specific habit on Sept 7
       const logResult = await client.execute({

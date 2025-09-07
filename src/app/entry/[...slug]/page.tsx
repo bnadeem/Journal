@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MONTH_NAMES, MONTH_FULL_NAMES, MonthName } from '@/types/journal';
 import { formatDate } from '@/lib/utils';
 import HabitTrackerWrapper from '@/components/habits/HabitTrackerWrapper';
+import { getHabitData } from '@/lib/habits';
 import client from '@/lib/libsql';
 
 interface PageProps {
@@ -11,6 +12,8 @@ interface PageProps {
 export default async function EntryPage({ params }: PageProps) {
   const { slug } = await params;
   const [year, month, day] = slug;
+
+  const habitData = await getHabitData();
 
   if (!year || !month || !day) {
     return (
@@ -182,6 +185,8 @@ export default async function EntryPage({ params }: PageProps) {
                   year={year}
                   month={month}
                   day={day}
+                  initialHabits={habitData.habits}
+                  initialHabitLogs={habitData.habitLogs}
                 />
               </div>
             </div>
