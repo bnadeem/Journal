@@ -331,6 +331,117 @@
   border-radius: 4px;
 }
 
+/* Journal Section */
+.journal-section {
+  padding: 24px;
+  background: #f8fafc;
+  margin-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.journal-section h4 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.journal-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.journal-exists {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.journal-preview {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.journal-content {
+  margin: 0;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.journal-missing {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.no-entry-message {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  padding: 16px;
+}
+
+.journal-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.journal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+
+.journal-button.view-entry {
+  background: #3b82f6;
+  color: white;
+  border: 2px solid #3b82f6;
+}
+
+.journal-button.view-entry:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.journal-button.create-entry {
+  background: #10b981;
+  color: white;
+  border: 2px solid #10b981;
+}
+
+.journal-button.create-entry:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
 /* Responsive Design */
 @media (max-width: 640px) {
   .modal-overlay {
@@ -370,6 +481,10 @@
   }
   
   .day-insights {
+    padding: 20px 16px;
+  }
+  
+  .journal-section {
     padding: 20px 16px;
   }
 }

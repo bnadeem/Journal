@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Habit } from '@/types/journal';
 import { HabitCompletion } from './UnifiedCalendarDay';
+import Link from 'next/link';
 
 interface DayHabit extends HabitCompletion {
   streak: number;
@@ -27,6 +28,34 @@ export default function DayDetailModal({
   onToggleHabit 
 }: DayDetailModalProps) {
   const [updatingHabits, setUpdatingHabits] = useState<Set<string>>(new Set());
+  const [journalEntry, setJournalEntry] = useState<{ exists: boolean, content?: string } | null>(null);
+  const [loadingEntry, setLoadingEntry] = useState(true);
+
+  useEffect(() => {
+    const checkJournalEntry = async () => {
+      try {
+        const [year, month, day] = [date.getFullYear().toString(), date.toLocaleString('default', { month: 'short' }), date.getDate().toString()];
+        const response = await fetch(`/api/entries/${year}/${month}/${day}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setJournalEntry({ 
+            exists: true, 
+            content: data.entry?.content || '' 
+          });
+        } else {
+          setJournalEntry({ exists: false });
+        }
+      } catch (error) {
+        console.error('Error checking journal entry:', error);
+        setJournalEntry({ exists: false });
+      } finally {
+        setLoadingEntry(false);
+      }
+    };
+
+    checkJournalEntry();
+  }, [date]);
 
   const handleToggleHabit = (habitId: string) => {
     setUpdatingHabits(prev => new Set(prev).add(habitId));
@@ -157,6 +186,51 @@ export default function DayDetailModal({
                   )}
                 </div>
               )}
+              
+              {/* Journal Entry Section */}
+              <div className="journal-section">
+                <h4>Journal Entry</h4>
+                {loadingEntry ? (
+                  <div className="journal-loading">
+                    <span className="loading-spinner">⏳</span> Checking for journal entry...
+                  </div>
+                ) : journalEntry?.exists ? (
+                  <div className="journal-exists">
+                    <div className="journal-preview">
+                      <p className="journal-content">
+                        {journalEntry.content && journalEntry.content.length > 100 
+                          ? journalEntry.content.substring(0, 100) + '...'
+                          : journalEntry.content || 'Journal entry exists'
+                        }
+                      </p>
+                    </div>
+                    <div className="journal-actions">
+                      <Link 
+                        href={`/entry/${date.getFullYear()}/${date.toLocaleString('default', { month: 'short' })}/${date.getDate()}`}
+                        className="journal-button view-entry"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        📖 View Entry
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="journal-missing">
+                    <p className="no-entry-message">No journal entry for this day yet.</p>
+                    <div className="journal-actions">
+                      <Link 
+                        href={`/entry/new?date=${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`}
+                        className="journal-button create-entry"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        ✍️ Create Entry
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
         </div>
       </div>
