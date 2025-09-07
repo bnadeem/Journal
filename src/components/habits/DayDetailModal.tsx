@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Habit } from '@/types/journal';
 import { HabitCompletion } from './UnifiedCalendarDay';
 
@@ -12,58 +12,28 @@ interface DayHabit extends HabitCompletion {
 interface DayDetailModalProps {
   date: Date;
   dateString: string;
+  dayHabits: DayHabit[];
   habits: Habit[];
-  initialDayHabits: DayHabit[];
   onClose: () => void;
-  onToggleHabit: (habitId: string, date: Date) => Promise<void>;
+  onToggleHabit: (habitId: string, dateString: string) => void;
 }
 
 export default function DayDetailModal({ 
   date, 
   dateString,
-  habits,
-  initialDayHabits,
+  dayHabits,
+  habits, 
   onClose, 
   onToggleHabit 
 }: DayDetailModalProps) {
-  const [dayHabits, setDayHabits] = useState<DayHabit[]>(initialDayHabits);
-  const [isLoading, setIsLoading] = useState(false);
   const [updatingHabits, setUpdatingHabits] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    setDayHabits(initialDayHabits);
-  }, [initialDayHabits]);
-
-  const handleToggleHabit = async (habitId: string) => {
-    if (updatingHabits.has(habitId)) return;
-    
+  const handleToggleHabit = (habitId: string) => {
     setUpdatingHabits(prev => new Set(prev).add(habitId));
-    
-    try {
-      // Optimistic update
-      setDayHabits(prev => prev.map(habit => 
-        habit.habitId === habitId 
-          ? { 
-              ...habit, 
-              completed: !habit.completed,
-              // Optimistically update streak
-              streak: !habit.completed ? habit.streak + 1 : Math.max(0, habit.streak - 1)
-            }
-          : habit
-      ));
-      
-      await onToggleHabit(habitId, date);
-    } catch (error) {
-      console.error('Error toggling habit:', error);
-      // Revert optimistic update
-      setDayHabits(initialDayHabits);
-    } finally {
-      setUpdatingHabits(prev => {
-        const next = new Set(prev);
-        next.delete(habitId);
-        return next;
-      });
-    }
+    onToggleHabit(habitId, dateString);
+    // The parent component will handle the state update
+    // and the loading state will be handled by the parent as well.
+    // We can remove the updatingHabits state if the parent handles the loading state.
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -113,12 +83,6 @@ export default function DayDetailModal({
         </div>
         
         <div className="modal-content">
-          {isLoading ? (
-            <div className="modal-loading">
-              <div className="loading-spinner"></div>
-              <span>Loading habits...</span>
-            </div>
-          ) : (
             <>
               <div className="habits-list">
                 {dayHabits.length === 0 ? (
@@ -147,15 +111,10 @@ export default function DayDetailModal({
                       </div>
                       
                       <button
-                        className={`toggle-button ${habit.completed ? 'completed' : 'incomplete'} ${
-                          updatingHabits.has(habit.habitId) ? 'updating' : ''
-                        }`}
+                        className={`toggle-button ${habit.completed ? 'completed' : 'incomplete'}`}
                         onClick={() => handleToggleHabit(habit.habitId)}
-                        disabled={updatingHabits.has(habit.habitId)}
                       >
-                        {updatingHabits.has(habit.habitId) ? (
-                          <div className="updating-spinner"></div>
-                        ) : habit.completed ? (
+                        {habit.completed ? (
                           '✓ Done'
                         ) : (
                           '○ Mark Done'
@@ -199,7 +158,6 @@ export default function DayDetailModal({
                 </div>
               )}
             </>
-          )}
         </div>
       </div>
     </div>

@@ -98,8 +98,7 @@ export default function HabitsDashboard({ initialHabitData }: HabitsDashboardPro
     setSelectedDay({ date, dateString, dayHabits });
   };
 
-  const handleToggleHabit = async (habitId: string, date: Date) => {
-    const dateString = date.toISOString().split('T')[0];
+  const handleToggleHabit = async (habitId: string, dateString: string) => {
     startTransition(() => {
       toggleHabitAction(habitId, dateString, null);
     });
@@ -239,9 +238,9 @@ export default function HabitsDashboard({ initialHabitData }: HabitsDashboardPro
                         </div>
                         <button
                           onClick={() => {
-                            // Mark today as complete
                             const today = new Date();
-                            handleToggleHabit(habitId, today);
+                            const dateString = today.toISOString().split('T')[0];
+                            handleToggleHabit(habitId, dateString);
                           }}
                           className={`px-6 py-3 rounded-lg font-medium transition-all ${alertStyles.button} shadow-lg`}
                         >
