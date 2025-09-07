@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Habit, HabitStats } from '@/types/journal';
+import { Habit, HabitStats, HabitLog } from '@/types/journal';
 import DayDetailModal from '@/components/habits/DayDetailModal';
+import { HabitCompletion } from '@/components/habits/UnifiedCalendarDay';
 import HabitEditModal from '@/components/habits/HabitEditModal';
 import NewEntryButton from '@/components/ui/NewEntryButton';
 import { calculateHabitPermanence, HABIT_FORMATION_STAGES, assessHabitRisk, HabitRiskAssessment } from '@/lib/habit-permanence';
@@ -23,6 +24,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [dayHabits, setDayHabits] = useState<HabitCompletion[]>([]);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [newHabit, setNewHabit] = useState({
     name: '',
@@ -35,6 +37,37 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
   useEffect(() => {
     fetchHabits();
   }, []);
+
+  useEffect(() => {
+    if (selectedDay) {
+      const dateString = selectedDay.toISOString().split('T')[0];
+      const fetchDayHabits = async () => {
+        const allHabitLogs = await Promise.all(
+          habits.map(async (habit) => {
+            const response = await fetch(`/api/habits/${habit.id}/logs?startDate=${dateString}&endDate=${dateString}`);
+            if (!response.ok) {
+              console.error(`Failed to fetch logs for habit ${habit.id}`);
+              return { habit, logs: [] };
+            }
+            const logs = await response.json();
+            return { habit, logs };
+          })
+        );
+
+        const dayHabits: HabitCompletion[] = allHabitLogs.map(({ habit, logs }) => {
+          const dayLog = logs.find((log: HabitLog) => log.date === dateString);
+          return {
+            habitId: habit.id,
+            habitName: habit.name,
+            habitColor: habit.color || '#3b82f6',
+            completed: dayLog?.completed || false
+          };
+        });
+        setDayHabits(dayHabits);
+      };
+      fetchDayHabits();
+    }
+  }, [selectedDay, habits]);
 
   const fetchHabits = async () => {
     try {
@@ -666,6 +699,8 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
           {selectedDay && (
             <DayDetailModal
               date={selectedDay}
+              dateString={selectedDay.toISOString().split('T')[0]}
+              dayHabits={dayHabits}
               habits={habits.map(h => ({ ...h, color: getHexColor(h.color || '#3b82f6') }))}
               onClose={() => setSelectedDay(null)}
               onToggleHabit={handleToggleHabit}

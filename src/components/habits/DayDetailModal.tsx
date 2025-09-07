@@ -21,7 +21,7 @@ interface DayDetailModalProps {
 export default function DayDetailModal({ 
   date, 
   dateString,
-  dayHabits,
+  dayHabits = [],
   habits, 
   onClose, 
   onToggleHabit 

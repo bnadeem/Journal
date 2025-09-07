@@ -763,7 +763,7 @@ export default function HabitsDashboard({ initialHabitData }: HabitsDashboardPro
             <DayDetailModal
               date={selectedDay.date}
               dateString={selectedDay.dateString}
-              initialDayHabits={selectedDay.dayHabits}
+              dayHabits={selectedDay.dayHabits}
               habits={habits.map(h => ({ ...h, color: getHexColor(h.color || '#3b82f6') }))}
               onClose={() => setSelectedDay(null)}
               onToggleHabit={handleToggleHabit}
