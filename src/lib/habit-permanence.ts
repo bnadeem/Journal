@@ -95,7 +95,11 @@ export const calculateHabitPermanence = (logs: HabitLog[], startDate: Date): Hab
   }
 
   const today = new Date();
-  const daysSinceStart = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const todayDateString = today.toISOString().split('T')[0];
+  
+  // Count formation days based on actual tracking days, excluding today
+  const trackingDays = [...logs].filter(log => log.date !== todayDateString);
+  const daysSinceStart = Math.max(1, trackingDays.length);
   
   // Sort logs by date
   const sortedLogs = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
