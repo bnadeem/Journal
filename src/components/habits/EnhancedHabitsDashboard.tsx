@@ -732,7 +732,7 @@ export default function EnhancedHabitsDashboard({
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <div className="text-2xl font-bold text-orange-600">
-                  {Object.values(habitPermanence).filter((p: any) => p.stage === 'Automatic').length}
+                  {Object.values(habitPermanence).filter((p: any) => p.permanenceStage === 'automatic').length}
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-wide">Auto</div>
               </div>
@@ -955,17 +955,16 @@ export default function EnhancedHabitsDashboard({
                 
                 if (!stats || !permanence) return null;
                 
-                const formationDays = permanence.daysInCurrentStage || 0;
-                const totalFormationDays = permanence.stage === 'Initiation' ? 21 : 
-                                         permanence.stage === 'Development' ? 66 : 
-                                         permanence.stage === 'Stabilization' ? 154 : 365;
-                const progressPercent = Math.min((formationDays / (permanence.stage === 'Initiation' ? 21 : 
-                                                 permanence.stage === 'Development' ? 45 : 
-                                                 permanence.stage === 'Stabilization' ? 88 : 100)) * 100, 100);
+                const formationDays = permanence.daysSinceStart || 0;
+                const totalFormationDays = permanence.permanenceStage === 'initiation' ? 21 : 
+                                         permanence.permanenceStage === 'development' ? 66 : 
+                                         permanence.permanenceStage === 'stabilization' ? 154 : 365;
+                const progressPercent = Math.min((formationDays / (permanence.permanenceStage === 'initiation' ? 21 : 
+                                                 permanence.permanenceStage === 'development' ? 45 : 
+                                                 permanence.permanenceStage === 'stabilization' ? 88 : 100)) * 100, 100);
                 
-                const automaticityPercent = Math.min(permanence.automaticity * 100, 100);
-                const strengthLabel = automaticityPercent >= 70 ? 'strong' : 
-                                    automaticityPercent >= 40 ? 'developing' : 'weak';
+                const automaticityPercent = Math.min(permanence.automaticityScore, 100);
+                const strengthLabel = permanence.strengthLevel;
                 
                 return (
                   <div key={habit.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
@@ -997,18 +996,18 @@ export default function EnhancedHabitsDashboard({
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-lg">🌱</span>
                           <span className={`font-semibold ${
-                            permanence.stage === 'Initiation' ? 'text-red-600' :
-                            permanence.stage === 'Development' ? 'text-orange-600' :
-                            permanence.stage === 'Stabilization' ? 'text-blue-600' :
+                            permanence.permanenceStage === 'initiation' ? 'text-red-600' :
+                            permanence.permanenceStage === 'development' ? 'text-orange-600' :
+                            permanence.permanenceStage === 'stabilization' ? 'text-blue-600' :
                             'text-green-600'
                           }`}>
-                            {permanence.stage} Phase
+                            {permanence.permanenceStage.charAt(0).toUpperCase() + permanence.permanenceStage.slice(1)} Phase
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mb-3">
-                          {permanence.stage === 'Initiation' ? 'Building initial momentum - requires high motivation' :
-                           permanence.stage === 'Development' ? 'Developing consistency - getting easier!' :
-                           permanence.stage === 'Stabilization' ? 'Stabilizing the habit - almost automatic!' :
+                          {permanence.permanenceStage === 'initiation' ? 'Building initial momentum - requires high motivation' :
+                           permanence.permanenceStage === 'development' ? 'Developing consistency - getting easier!' :
+                           permanence.permanenceStage === 'stabilization' ? 'Stabilizing the habit - almost automatic!' :
                            'Habit is automatic - well done!'}
                         </p>
                         
@@ -1020,9 +1019,9 @@ export default function EnhancedHabitsDashboard({
                           <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
                             <div 
                               className={`h-2 rounded-full transition-all duration-500 ${
-                                permanence.stage === 'Initiation' ? 'bg-red-400' :
-                                permanence.stage === 'Development' ? 'bg-orange-400' :
-                                permanence.stage === 'Stabilization' ? 'bg-blue-400' :
+                                permanence.permanenceStage === 'initiation' ? 'bg-red-400' :
+                                permanence.permanenceStage === 'development' ? 'bg-orange-400' :
+                                permanence.permanenceStage === 'stabilization' ? 'bg-blue-400' :
                                 'bg-green-400'
                               }`}
                               style={{ width: `${progressPercent}%` }}
@@ -1031,28 +1030,28 @@ export default function EnhancedHabitsDashboard({
                         </div>
 
                         <p className="text-sm text-gray-600">
-                          Building foundation ({formationDays}/{permanence.stage === 'Initiation' ? 21 : 
-                                              permanence.stage === 'Development' ? 66 : 
-                                              permanence.stage === 'Stabilization' ? 154 : 365} days). 
-                          {permanence.stage === 'Initiation' ? ' High effort required - this is normal!' :
-                           permanence.stage === 'Development' ? ' Getting easier each day!' :
-                           permanence.stage === 'Stabilization' ? ' Almost there - stay consistent!' :
+                          Building foundation ({formationDays}/{permanence.permanenceStage === 'initiation' ? 21 : 
+                                              permanence.permanenceStage === 'development' ? 66 : 
+                                              permanence.permanenceStage === 'stabilization' ? 154 : 365} days). 
+                          {permanence.permanenceStage === 'initiation' ? ' High effort required - this is normal!' :
+                           permanence.permanenceStage === 'development' ? ' Getting easier each day!' :
+                           permanence.permanenceStage === 'stabilization' ? ' Almost there - stay consistent!' :
                            ' Congratulations - habit formed!'}
                         </p>
                       </div>
 
                       {/* Next Milestone */}
-                      {permanence.stage !== 'Automatic' && (
+                      {permanence.permanenceStage !== 'automatic' && (
                         <div>
                           <div className="text-sm font-medium text-gray-700 mb-1">Next Milestone</div>
                           <div className="text-sm text-gray-600">
-                            {permanence.stage === 'Initiation' ? 'Development Phase' :
-                             permanence.stage === 'Development' ? 'Stabilization Phase' :
+                            {permanence.permanenceStage === 'initiation' ? 'Development Phase' :
+                             permanence.permanenceStage === 'development' ? 'Stabilization Phase' :
                              'Automatic Phase'}
                           </div>
                           <div className="text-xs text-gray-500">
-                            ~{permanence.stage === 'Initiation' ? (21 - formationDays) :
-                               permanence.stage === 'Development' ? (66 - formationDays) :
+                            ~{permanence.permanenceStage === 'initiation' ? (21 - formationDays) :
+                               permanence.permanenceStage === 'development' ? (66 - formationDays) :
                                (154 - formationDays)} days: Almost through the hardest part! Keep going.
                           </div>
                         </div>
@@ -1070,6 +1069,7 @@ export default function EnhancedHabitsDashboard({
                         </div>
                         <div className="text-center">
                           <div className={`text-2xl font-bold ${
+                            strengthLabel === 'automatic' ? 'text-purple-600' :
                             strengthLabel === 'strong' ? 'text-green-600' :
                             strengthLabel === 'developing' ? 'text-orange-600' :
                             'text-red-600'
