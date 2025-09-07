@@ -9,16 +9,16 @@ interface HabitTrackerWrapperProps {
   year: string;
   month: string;
   day: string;
-  initialHabits: Habit[];
-  initialHabitLogs: Record<string, HabitLog[]>;
+  initialHabits?: Habit[];
+  initialHabitLogs?: Record<string, HabitLog[]>;
 }
 
 export default function HabitTrackerWrapper({ 
   year, 
   month, 
   day, 
-  initialHabits, 
-  initialHabitLogs 
+  initialHabits = [], 
+  initialHabitLogs = {} 
 }: HabitTrackerWrapperProps) {
   const [isPending, startTransition] = useTransition();
 

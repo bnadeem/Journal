@@ -4,13 +4,14 @@ import { headers } from 'next/headers';
 import { HabitData } from '@/lib/habits';
 
 export default async function HabitsPage() {
-  const host = headers().get('host');
+  const headersList = await headers();
+  const host = headersList.get('host');
   const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
   
   const res = await fetch(`${protocol}://${host}/api/habits/data`, {
     cache: 'no-store',
     headers: {
-      cookie: headers().get('cookie') || '',
+      cookie: headersList.get('cookie') || '',
     },
   });
 

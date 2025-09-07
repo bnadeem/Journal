@@ -5,10 +5,10 @@ import SummaryEditor from '@/components/journal/SummaryEditor';
 import { Suspense } from 'react';
 
 interface PageProps {
-  params: { 
+  params: Promise<{ 
     year: string;
     month: MonthName;
-  };
+  }>;
 }
 
 async function getSummaryData(year: string, month: MonthName, host: string | null, cookie: string | null) {
@@ -31,7 +31,7 @@ async function getSummaryData(year: string, month: MonthName, host: string | nul
 }
 
 export default async function MonthlySummaryPage({ params }: PageProps) {
-  const { year, month } = params;
+  const { year, month } = await params;
 
   if (!year || !month) {
     return (
@@ -46,7 +46,7 @@ export default async function MonthlySummaryPage({ params }: PageProps) {
     );
   }
 
-  const headersList = headers();
+  const headersList = await headers();
   const host = headersList.get('host');
   const cookie = headersList.get('cookie');
   const { summaryContent, entriesCount } = await getSummaryData(year, month, host, cookie);

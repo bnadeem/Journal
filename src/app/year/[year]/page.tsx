@@ -29,7 +29,7 @@ async function getMonths(year: string, host: string | null, cookie: string | nul
 export default async function YearPage({ params }: PageProps) {
   const { year } = await params;
   
-  const headersList = headers();
+  const headersList = await headers();
   const host = headersList.get('host');
   const cookie = headersList.get('cookie');
   const months = await getMonths(year, host, cookie);

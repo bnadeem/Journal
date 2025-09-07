@@ -21,7 +21,7 @@ async function getYears(host: string | null, cookie: string | null): Promise<str
 }
 
 export default async function Home() {
-  const headersList = headers();
+  const headersList = await headers();
   const host = headersList.get('host');
   const cookie = headersList.get('cookie');
   const years = await getYears(host, cookie);

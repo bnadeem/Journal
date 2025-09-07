@@ -27,7 +27,7 @@ export default function HabitsDashboard({ initialHabitData }: HabitsDashboardPro
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [visibleHabits, setVisibleHabits] = useState<string[]>([]);
-  const [selectedDay, setSelectedDay] = useState<{ date: Date; dateString: string; dayHabits: HabitCompletion[] } | null>(null);
+  const [selectedDay, setSelectedDay] = useState<{ date: Date; dateString: string; dayHabits: any[] } | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [newHabit, setNewHabit] = useState({
     name: '',
@@ -95,7 +95,12 @@ export default function HabitsDashboard({ initialHabitData }: HabitsDashboardPro
   };
 
   const handleDayClick = (date: Date, dateString: string, dayHabits: HabitCompletion[]) => {
-    setSelectedDay({ date, dateString, dayHabits });
+    const transformedDayHabits = dayHabits.map(habit => ({
+      ...habit,
+      streak: 0, // TODO: Calculate actual streak
+      category: habits.find(h => h.id === habit.habitId)?.category || 'General'
+    }));
+    setSelectedDay({ date, dateString, dayHabits: transformedDayHabits });
   };
 
   const handleToggleHabit = async (habitId: string, dateString: string) => {

@@ -32,7 +32,7 @@ export default async function EntryPage({ params }: PageProps) {
   const { slug } = await params;
   const [year, month, day] = slug;
 
-  const headersList = headers();
+  const headersList = await headers();
   const host = headersList.get('host');
   const cookie = headersList.get('cookie');
   const data = await getEntryData(slug, host, cookie);
@@ -80,7 +80,7 @@ export default async function EntryPage({ params }: PageProps) {
 
   const { entry, habitData } = data;
   const entryContent = entry.content || '';
-  const wordCount = entryContent.split(/\s+/).filter(word => word.length > 0).length;
+  const wordCount = entryContent.split(/\s+/).filter((word: string) => word.length > 0).length;
 
   const entryDate = `${year}-${MONTH_NAMES.indexOf(month as MonthName) + 1}-${day}`;
 

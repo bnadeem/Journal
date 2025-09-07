@@ -24,7 +24,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [dayHabits, setDayHabits] = useState<HabitCompletion[]>([]);
+  const [dayHabits, setDayHabits] = useState<any[]>([]);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [newHabit, setNewHabit] = useState({
     name: '',
@@ -54,13 +54,15 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
           })
         );
 
-        const dayHabits: HabitCompletion[] = allHabitLogs.map(({ habit, logs }) => {
+        const dayHabits = allHabitLogs.map(({ habit, logs }) => {
           const dayLog = logs.find((log: HabitLog) => log.date === dateString);
           return {
             habitId: habit.id,
             habitName: habit.name,
             habitColor: habit.color || '#3b82f6',
-            completed: dayLog?.completed || false
+            completed: dayLog?.completed || false,
+            streak: 0, // TODO: Calculate actual streak
+            category: habit.category || 'General'
           };
         });
         setDayHabits(dayHabits);
@@ -703,7 +705,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
               dayHabits={dayHabits}
               habits={habits.map(h => ({ ...h, color: getHexColor(h.color || '#3b82f6') }))}
               onClose={() => setSelectedDay(null)}
-              onToggleHabit={handleToggleHabit}
+              onToggleHabit={(habitId: string, dateString: string) => handleToggleHabit(habitId, new Date(dateString))}
             />
           )}
 
