@@ -12,6 +12,27 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month');
     const recent = searchParams.get('recent');
     const limit = searchParams.get('limit');
+    const search = searchParams.get('search');
+
+    // If search param, return matching entries
+    if (search) {
+      const limitNum = limit ? parseInt(limit) : 20;
+      const result = await client.execute({
+        sql: 'SELECT year, month, day, content, createdAt, updatedAt FROM JournalEntry WHERE content LIKE ? ORDER BY year DESC, month DESC, day DESC LIMIT ?',
+        args: [`%${search}%`, limitNum]
+      });
+      
+      const entries = result.rows.map(row => ({
+        year: row.year?.toString() || '',
+        month: row.month as string || '',
+        day: row.day?.toString() || '',
+        content: row.content as string || '',
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt
+      }));
+      
+      return NextResponse.json({ entries });
+    }
 
     // If recent param, return recent entries
     if (recent) {

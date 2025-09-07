@@ -341,21 +341,21 @@ Quick Actions:
 ## 📋 **Implementation Checklist**
 
 ### **Phase 1: Foundation**
-- [ ] Redirect `/` to enhanced HabitsDashboard
-- [ ] Add journal quick-entry panel to habits dashboard
-- [ ] Integrate recent entries display in habits layout
-- [ ] Update navigation menu to reflect single dashboard
+- [x] Redirect `/` to enhanced HabitsDashboard
+- [x] Add journal quick-entry panel to habits dashboard
+- [x] Integrate recent entries display in habits layout
+- [x] Update navigation menu to reflect single dashboard
 
 ### **Phase 2: Sidebar Enhancement**
-- [ ] Add journal preview to day detail sidebar
-- [ ] Implement journal entry editor in sidebar
-- [ ] Add "Create Entry" functionality for empty days
-- [ ] Integrate journal actions with habit completion
+- [x] Add journal preview to day detail sidebar
+- [x] Implement journal entry editor in sidebar
+- [x] Add "Create Entry" functionality for empty days
+- [x] Integrate journal actions with habit completion
 
 ### **Phase 3: SPA Features**
-- [ ] Implement command palette (Cmd+K)
-- [ ] Add global search across habits and journal
-- [ ] Create modal system for full-screen editors
+- [x] Implement command palette (Cmd+K)
+- [x] Add global search across habits and journal
+- [x] Create modal system for full-screen editors
 - [ ] Optimize for mobile gesture navigation
 
 ### **Phase 4: Advanced Integration**

@@ -29,8 +29,11 @@ export default function DaySidebar({
   onToggleHabit 
 }: DaySidebarProps) {
   const [updatingHabits, setUpdatingHabits] = useState<Set<string>>(new Set());
-  const [journalEntry, setJournalEntry] = useState<{ exists: boolean, content?: string } | null>(null);
+  const [journalEntry, setJournalEntry] = useState<{ exists: boolean, content?: string, id?: string } | null>(null);
   const [loadingEntry, setLoadingEntry] = useState(true);
+  const [editingEntry, setEditingEntry] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [savingEntry, setSavingEntry] = useState(false);
 
   useEffect(() => {
     if (!date) return;
@@ -44,7 +47,8 @@ export default function DaySidebar({
           const data = await response.json();
           setJournalEntry({ 
             exists: true, 
-            content: data.entry?.content || '' 
+            content: data.entry?.content || '',
+            id: data.entry?.id
           });
         } else {
           setJournalEntry({ exists: false });
@@ -63,6 +67,62 @@ export default function DaySidebar({
   const handleToggleHabit = (habitId: string) => {
     setUpdatingHabits(prev => new Set(prev).add(habitId));
     onToggleHabit(habitId, dateString);
+  };
+
+  const startEditing = () => {
+    setEditContent(journalEntry?.content || '');
+    setEditingEntry(true);
+  };
+
+  const cancelEditing = () => {
+    setEditingEntry(false);
+    setEditContent('');
+  };
+
+  const saveEntry = async () => {
+    if (!date || !editContent.trim()) return;
+
+    setSavingEntry(true);
+    try {
+      const [year, month, day] = [date.getFullYear().toString(), date.toLocaleString('default', { month: 'short' }), date.getDate().toString()];
+      const response = await fetch(`/api/entries/${year}/${month}/${day}`, {
+        method: journalEntry?.exists ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: editContent,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setJournalEntry({
+          exists: true,
+          content: editContent,
+          id: data.entry?.id || journalEntry?.id
+        });
+        setEditingEntry(false);
+        setEditContent('');
+      }
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+    } finally {
+      setSavingEntry(false);
+    }
+  };
+
+  const createNewEntry = () => {
+    setEditContent('');
+    setEditingEntry(true);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && e.metaKey) {
+      saveEntry();
+    } else if (e.key === 'Escape') {
+      cancelEditing();
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -156,24 +216,61 @@ export default function DaySidebar({
             <div className="journal-loading">
               <span className="loading-spinner">⏳</span> Checking for journal entry...
             </div>
+          ) : editingEntry ? (
+            <div className="journal-editor">
+              <div className="editor-header">
+                <span className="editor-title">
+                  {journalEntry?.exists ? 'Editing Entry' : 'New Entry'}
+                </span>
+                <span className="editor-hint">Cmd+Enter to save, Esc to cancel</span>
+              </div>
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Write your thoughts for this day..."
+                className="journal-textarea"
+                rows={8}
+                autoFocus
+              />
+              <div className="editor-actions">
+                <button
+                  onClick={cancelEditing}
+                  className="journal-button cancel-edit"
+                  disabled={savingEntry}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEntry}
+                  disabled={!editContent.trim() || savingEntry}
+                  className="journal-button save-entry"
+                >
+                  {savingEntry ? 'Saving...' : 'Save Entry'}
+                </button>
+              </div>
+            </div>
           ) : journalEntry?.exists ? (
             <div className="journal-exists">
               <div className="journal-preview">
                 <p className="journal-content">
-                  {journalEntry.content && journalEntry.content.length > 100 
-                    ? journalEntry.content.substring(0, 100) + '...'
-                    : journalEntry.content || 'Journal entry exists'
-                  }
+                  {journalEntry.content || 'Empty entry'}
                 </p>
               </div>
               <div className="journal-actions">
+                <button 
+                  onClick={startEditing}
+                  className="journal-button edit-inline"
+                >
+                  ✏️ Edit Here
+                </button>
                 <Link 
                   href={`/entry/${date.getFullYear()}/${date.toLocaleString('default', { month: 'short' })}/${date.getDate()}`}
                   className="journal-button view-entry"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  📖 View Entry
+                  📖 Full View
                 </Link>
               </div>
             </div>
@@ -181,13 +278,19 @@ export default function DaySidebar({
             <div className="journal-missing">
               <p className="no-entry-message">No journal entry for this day yet.</p>
               <div className="journal-actions">
+                <button 
+                  onClick={createNewEntry}
+                  className="journal-button create-inline"
+                >
+                  ✍️ Write Here
+                </button>
                 <Link 
                   href={`/entry/new?date=${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`}
                   className="journal-button create-entry"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  ✍️ Create Entry
+                  📝 Full Editor
                 </Link>
               </div>
             </div>

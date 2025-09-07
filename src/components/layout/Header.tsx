@@ -12,8 +12,8 @@ export default function Header() {
     return null;
   }
 
-  const isJournalPage = pathname === '/' || pathname.startsWith('/year') || pathname.startsWith('/month') || pathname.startsWith('/entry') || pathname.startsWith('/edit') || pathname.startsWith('/summary');
-  const isHabitsPage = pathname.startsWith('/habits');
+  const isDashboardPage = pathname === '/' || pathname.startsWith('/habits');
+  const isArchivePage = pathname.startsWith('/year') || pathname.startsWith('/month') || pathname.startsWith('/entry') || pathname.startsWith('/edit') || pathname.startsWith('/summary');
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -25,8 +25,8 @@ export default function Header() {
               <BookOpenIcon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Personal Journal</h1>
-              <p className="text-xs text-gray-500">Your thoughts & habits</p>
+              <h1 className="text-xl font-bold text-gray-900">Personal Growth</h1>
+              <p className="text-xs text-gray-500">Habits & journal unified</p>
             </div>
           </Link>
 
@@ -35,25 +35,25 @@ export default function Header() {
             <Link
               href="/"
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isJournalPage
+                isDashboardPage
                   ? 'bg-blue-50 text-blue-700 border border-blue-200'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              <BookOpenIcon className="w-4 h-4" />
-              <span>Journal</span>
+              <ChartBarIcon className="w-4 h-4" />
+              <span>Dashboard</span>
             </Link>
 
             <Link
-              href="/habits"
+              href="/year"
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isHabitsPage
+                isArchivePage
                   ? 'bg-green-50 text-green-700 border border-green-200'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
-              <ChartBarIcon className="w-4 h-4" />
-              <span>Habits</span>
+              <BookOpenIcon className="w-4 h-4" />
+              <span>Archive</span>
             </Link>
           </nav>
 

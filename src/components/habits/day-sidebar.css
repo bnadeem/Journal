@@ -239,6 +239,108 @@
   padding-bottom: 16px;
 }
 
+/* Journal Editor */
+.journal-editor {
+  padding: 0 24px 16px;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.editor-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.editor-hint {
+  font-size: 11px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.journal-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  color: #374151;
+  background: white;
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 200ms ease;
+}
+
+.journal-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.journal-textarea::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+
+.journal-button.cancel-edit {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.journal-button.cancel-edit:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.journal-button.save-entry {
+  background: #10b981;
+  color: white;
+  border: 1px solid #10b981;
+}
+
+.journal-button.save-entry:hover:not(:disabled) {
+  background: #059669;
+  border-color: #059669;
+}
+
+.journal-button.save-entry:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.journal-button.edit-inline,
+.journal-button.create-inline {
+  background: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+  margin-right: 8px;
+}
+
+.journal-button.edit-inline:hover,
+.journal-button.create-inline:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
 .journal-loading {
   display: flex;
   align-items: center;
