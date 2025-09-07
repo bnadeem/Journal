@@ -470,12 +470,20 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
                       <p className="text-gray-600 text-sm">Your latest 7 journal entries</p>
                     </div>
                   </div>
-                  <Link
-                    href="/entry/new"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                  >
-                    New Entry
-                  </Link>
+                  <div className="flex items-center space-x-2">
+                    <Link
+                      href="/year"
+                      className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg hover:border-gray-400 text-sm"
+                    >
+                      View All
+                    </Link>
+                    <Link
+                      href="/entry/new"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      New Entry
+                    </Link>
+                  </div>
                 </div>
               </div>
               
@@ -508,14 +516,6 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
                         </Link>
                       );
                     })}
-                    <div className="text-center pt-2">
-                      <Link href="/year" className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                        View All Entries
-                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
