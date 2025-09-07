@@ -10,6 +10,28 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const year = searchParams.get('year');
     const month = searchParams.get('month');
+    const recent = searchParams.get('recent');
+    const limit = searchParams.get('limit');
+
+    // If recent param, return recent entries
+    if (recent) {
+      const limitNum = limit ? parseInt(limit) : 7;
+      const result = await client.execute({
+        sql: 'SELECT year, month, day, content, createdAt, updatedAt FROM JournalEntry ORDER BY year DESC, month DESC, day DESC LIMIT ?',
+        args: [limitNum]
+      });
+      
+      const entries = result.rows.map(row => ({
+        year: row.year?.toString() || '',
+        month: row.month as string || '',
+        day: row.day?.toString() || '',
+        content: row.content as string || '',
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt
+      }));
+      
+      return NextResponse.json({ recent: entries });
+    }
 
     // If no params, return all years
     if (!year) {

@@ -12,6 +12,15 @@ import '@/components/habits/unified-calendar.css';
 import '@/components/habits/habit-legend.css';
 import '@/components/habits/day-detail-modal.css';
 
+interface JournalEntry {
+  year: string;
+  month: string;
+  day: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface UnifiedDashboardProps {
   years: string[];
 }
@@ -21,6 +30,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
   const [, setHabitStats] = useState<Record<string, HabitStats>>({});
   const [habitPermanence, setHabitPermanence] = useState<Record<string, unknown>>({});
   const [habitRisks, setHabitRisks] = useState<Record<string, HabitRiskAssessment>>({});
+  const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -36,6 +46,7 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
 
   useEffect(() => {
     fetchHabits();
+    fetchRecentEntries();
   }, []);
 
   useEffect(() => {
@@ -70,6 +81,18 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
       fetchDayHabits();
     }
   }, [selectedDay, habits]);
+
+  const fetchRecentEntries = async () => {
+    try {
+      const response = await fetch('/api/entries?recent=true&limit=7');
+      if (response.ok) {
+        const data = await response.json();
+        setRecentEntries(data.recent || []);
+      }
+    } catch (error) {
+      console.error('Error fetching recent entries:', error);
+    }
+  };
 
   const fetchHabits = async () => {
     try {
@@ -443,8 +466,8 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
                       </svg>
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Journal Archive</h2>
-                      <p className="text-gray-600 text-sm">Browse your journal entries by year</p>
+                      <h2 className="text-lg font-semibold text-gray-900">Recent Entries</h2>
+                      <p className="text-gray-600 text-sm">Your latest 7 journal entries</p>
                     </div>
                   </div>
                   <Link
@@ -457,34 +480,42 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
               </div>
               
               <div className="p-6">
-                {years.length > 0 ? (
+                {recentEntries.length > 0 ? (
                   <div className="space-y-3">
-                    {years.slice(0, 5).map((year) => (
-                      <Link
-                        key={year}
-                        href={`/year/${year}`}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all duration-200 group"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="text-lg font-bold text-gray-900 group-hover:text-blue-600">
-                            {year}
+                    {recentEntries.map((entry, index) => {
+                      const entryDate = `${entry.month} ${entry.day}, ${entry.year}`;
+                      const truncatedContent = entry.content.length > 150 
+                        ? entry.content.substring(0, 150) + '...' 
+                        : entry.content;
+                      
+                      return (
+                        <Link
+                          key={`${entry.year}-${entry.month}-${entry.day}`}
+                          href={`/entry/${entry.year}/${entry.month}/${entry.day}`}
+                          className="flex flex-col p-4 bg-gray-50 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all duration-200 group"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-sm font-medium text-gray-900 group-hover:text-blue-600">
+                              {entryDate}
+                            </div>
+                            <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
                           </div>
-                          <div className="text-sm text-gray-600 group-hover:text-blue-600">
-                            View entries from {year}
-                          </div>
-                        </div>
-                        <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <p className="text-sm text-gray-600 group-hover:text-blue-600 line-clamp-2">
+                            {truncatedContent}
+                          </p>
+                        </Link>
+                      );
+                    })}
+                    <div className="text-center pt-2">
+                      <Link href="/year" className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                        View All Entries
+                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </Link>
-                    ))}
-                    {years.length > 5 && (
-                      <div className="text-center pt-2">
-                        <Link href="/year" className="text-blue-600 hover:text-blue-800 text-sm">
-                          View all {years.length} years →
-                        </Link>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
