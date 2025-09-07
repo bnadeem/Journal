@@ -6,14 +6,14 @@ import Link from 'next/link';
 import { Habit } from '@/types/journal';
 import UnifiedCalendar from '@/components/habits/UnifiedCalendar';
 import HabitLegend from '@/components/habits/HabitLegend';
-import DayDetailModal from '@/components/habits/DayDetailModal';
+import DaySidebar from '@/components/habits/DaySidebar';
 import HabitEditModal from '@/components/habits/HabitEditModal';
 import { HabitCompletion } from '@/components/habits/UnifiedCalendarDay';
 import { HABIT_FORMATION_STAGES, getHabitStatusMessage, getNextMilestone } from '@/lib/habit-permanence';
 import { toggleHabitAction, createHabitAction, updateHabitAction, toggleHabitActiveAction, deleteHabitAction } from '@/app/actions';
 import '@/components/habits/unified-calendar.css';
 import '@/components/habits/habit-legend.css';
-import '@/components/habits/day-detail-modal.css';
+import '@/components/habits/day-sidebar.css';
 import { HabitData } from '@/lib/habits';
 
 interface HabitsDashboardProps {
@@ -763,9 +763,9 @@ export default function HabitsDashboard({ initialHabitData }: HabitsDashboardPro
             </>
           )}
 
-          {/* Day Detail Modal */}
+          {/* Day Detail Sidebar */}
           {selectedDay && (
-            <DayDetailModal
+            <DaySidebar
               date={selectedDay.date}
               dateString={selectedDay.dateString}
               dayHabits={selectedDay.dayHabits}

@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Habit, HabitStats, HabitLog } from '@/types/journal';
-import DayDetailModal from '@/components/habits/DayDetailModal';
+import DaySidebar from '@/components/habits/DaySidebar';
 import { HabitCompletion } from '@/components/habits/UnifiedCalendarDay';
 import HabitEditModal from '@/components/habits/HabitEditModal';
 import NewEntryButton from '@/components/ui/NewEntryButton';
 import { calculateHabitPermanence, HABIT_FORMATION_STAGES, assessHabitRisk, HabitRiskAssessment } from '@/lib/habit-permanence';
 import '@/components/habits/unified-calendar.css';
 import '@/components/habits/habit-legend.css';
-import '@/components/habits/day-detail-modal.css';
+import '@/components/habits/day-sidebar.css';
 
 interface JournalEntry {
   year: string;
@@ -728,9 +728,9 @@ export default function UnifiedDashboard({ years }: UnifiedDashboardProps) {
             </div>
           )}
 
-          {/* Day Detail Modal */}
+          {/* Day Detail Sidebar */}
           {selectedDay && (
-            <DayDetailModal
+            <DaySidebar
               date={selectedDay}
               dateString={selectedDay.toISOString().split('T')[0]}
               dayHabits={dayHabits}
