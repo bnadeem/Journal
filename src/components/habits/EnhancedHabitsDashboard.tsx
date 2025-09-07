@@ -715,7 +715,7 @@ export default function EnhancedHabitsDashboard({
 
           {/* Habit metrics strip */}
           {activeHabits.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
               <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <div className="text-2xl font-bold text-blue-600">{completionPercentage}%</div>
                 <div className="text-xs text-gray-500 uppercase tracking-wide">Today</div>
@@ -745,6 +745,347 @@ export default function EnhancedHabitsDashboard({
             </div>
           )}
         </div>
+
+        {/* Main Dashboard Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Today's Motivation */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-xl">✨</span>
+              <h2 className="text-lg font-semibold text-gray-900">Today's Motivation</h2>
+            </div>
+            <div className="space-y-4">
+              {/* Progress celebration */}
+              {completionPercentage > 0 && (
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🎯</span>
+                    <h4 className="font-semibold text-gray-900">Daily Progress</h4>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-2">
+                    You've completed <strong>{completionPercentage}%</strong> of your habits today!
+                  </p>
+                  {completionPercentage === 100 ? (
+                    <p className="text-sm text-green-600 font-medium">🌟 Perfect day! You're building incredible momentum!</p>
+                  ) : completionPercentage >= 70 ? (
+                    <p className="text-sm text-blue-600 font-medium">💪 Great progress! You're so close to a perfect day!</p>
+                  ) : completionPercentage >= 30 ? (
+                    <p className="text-sm text-purple-600 font-medium">🚀 Good start! Every habit completed is a step forward!</p>
+                  ) : (
+                    <p className="text-sm text-orange-600 font-medium">🌅 New day, fresh opportunities! Your future self will thank you!</p>
+                  )}
+                </div>
+              )}
+
+              {/* Streak celebration */}
+              {Object.values(habitStats).some(stat => stat.currentStreak >= 3) && (
+                <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🔥</span>
+                    <h4 className="font-semibold text-gray-900">Streak Power</h4>
+                  </div>
+                  {(() => {
+                    const maxStreak = Math.max(...Object.values(habitStats).map(stat => stat.currentStreak));
+                    const streakHabit = habits.find(h => habitStats[h.id]?.currentStreak === maxStreak);
+                    return (
+                      <div>
+                        <p className="text-sm text-gray-700 mb-1">
+                          <strong>{maxStreak}-day streak</strong> with <em>{streakHabit?.name}</em>!
+                        </p>
+                        <p className="text-sm text-orange-600 font-medium">
+                          {maxStreak >= 21 ? "🏆 You're in the habit formation zone!" :
+                           maxStreak >= 14 ? "⚡ Momentum building! You're creating lasting change!" :
+                           maxStreak >= 7 ? "🌱 One week strong! The habit is taking root!" :
+                           "🌟 Every day counts! You're building something amazing!"}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Journal encouragement */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">📝</span>
+                  <h4 className="font-semibold text-gray-900">Reflection Moment</h4>
+                </div>
+                {recentEntries.length > 0 ? (
+                  <div>
+                    <p className="text-sm text-gray-700 mb-2">
+                      Your last entry was <strong>{(() => {
+                        const lastEntry = recentEntries[0];
+                        const entryDate = new Date(`${lastEntry.year}-${new Date(`1 ${lastEntry.month} 2000`).getMonth() + 1}-${lastEntry.day}`);
+                        const daysDiff = Math.floor((new Date().getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24));
+                        return daysDiff === 0 ? 'today' : daysDiff === 1 ? 'yesterday' : `${daysDiff} days ago`;
+                      })()}</strong>
+                    </p>
+                    <p className="text-sm text-purple-600 font-medium">
+                      💭 Your thoughts shape your reality. What will you capture today?
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-gray-700 mb-2">Ready to start your journaling journey?</p>
+                    <p className="text-sm text-purple-600 font-medium">
+                      ✍️ Every great story starts with a single word. Write yours!
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Personal Analytics */}
+          {insights && !insights.error && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-xl">📊</span>
+                <h2 className="text-lg font-semibold text-gray-900">Personal Analytics</h2>
+              </div>
+
+              <div className="space-y-6">
+                {/* Overall Stats */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                    <div className="text-xl font-bold text-green-600">{insights.positiveEntries}</div>
+                    <div className="text-xs text-green-700">Positive</div>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                    <div className="text-xl font-bold text-red-600">{insights.negativeEntries}</div>
+                    <div className="text-xs text-red-700">Challenging</div>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+                    <div className="text-xl font-bold text-gray-600">
+                      {insights.totalEntries - insights.positiveEntries - insights.negativeEntries}
+                    </div>
+                    <div className="text-xs text-gray-700">Neutral</div>
+                  </div>
+                </div>
+
+                {/* Top Positive Habits */}
+                {insights.topPositiveHabits && insights.topPositiveHabits.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      🌟 Mood Boosters
+                    </h4>
+                    <div className="space-y-2">
+                      {insights.topPositiveHabits.slice(0, 2).map((habit: any, index: number) => (
+                        <div key={habit.habitId} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">🎯</span>
+                            <div>
+                              <div className="font-medium text-green-900 text-sm">{habit.habitName}</div>
+                              <div className="text-xs text-green-700">{habit.mentionCount} positive mentions</div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-green-600 font-medium">
+                            +{habit.avgSentiment.toFixed(1)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Suggestions */}
+                {insights.suggestions && insights.suggestions.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      💡 Quick Tip
+                    </h4>
+                    <div className={`p-3 rounded-lg border-l-4 ${
+                      insights.suggestions[0].color === 'green' ? 'bg-green-50 border-green-400' :
+                      insights.suggestions[0].color === 'yellow' ? 'bg-yellow-50 border-yellow-400' :
+                      insights.suggestions[0].color === 'blue' ? 'bg-blue-50 border-blue-400' :
+                      insights.suggestions[0].color === 'purple' ? 'bg-purple-50 border-purple-400' :
+                      'bg-indigo-50 border-indigo-400'
+                    }`}>
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm">{insights.suggestions[0].icon}</span>
+                        <div className="flex-1">
+                          <h5 className={`font-medium text-sm ${
+                            insights.suggestions[0].color === 'green' ? 'text-green-900' :
+                            insights.suggestions[0].color === 'yellow' ? 'text-yellow-900' :
+                            insights.suggestions[0].color === 'blue' ? 'text-blue-900' :
+                            insights.suggestions[0].color === 'purple' ? 'text-purple-900' :
+                            'text-indigo-900'
+                          } mb-1`}>
+                            {insights.suggestions[0].title}
+                          </h5>
+                          <p className={`text-xs ${
+                            insights.suggestions[0].color === 'green' ? 'text-green-700' :
+                            insights.suggestions[0].color === 'yellow' ? 'text-yellow-700' :
+                            insights.suggestions[0].color === 'blue' ? 'text-blue-700' :
+                            insights.suggestions[0].color === 'purple' ? 'text-purple-700' :
+                            'text-indigo-700'
+                          }`}>
+                            {insights.suggestions[0].description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {loadingInsights && (
+                  <div className="text-center py-4">
+                    <div className="inline-flex items-center gap-3 text-gray-500">
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin"></div>
+                      Analyzing patterns...
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Habit Formation Cards */}
+        {activeHabits.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
+              <span className="text-2xl">🌱</span>
+              Habit Formation Progress
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {activeHabits.slice(0, 6).map((habit) => {
+                const stats = habitStats[habit.id];
+                const permanence = habitPermanence[habit.id];
+                
+                if (!stats || !permanence) return null;
+                
+                const formationDays = permanence.daysInCurrentStage || 0;
+                const totalFormationDays = permanence.stage === 'Initiation' ? 21 : 
+                                         permanence.stage === 'Development' ? 66 : 
+                                         permanence.stage === 'Stabilization' ? 154 : 365;
+                const progressPercent = Math.min((formationDays / (permanence.stage === 'Initiation' ? 21 : 
+                                                 permanence.stage === 'Development' ? 45 : 
+                                                 permanence.stage === 'Stabilization' ? 88 : 100)) * 100, 100);
+                
+                const automaticityPercent = Math.min(permanence.automaticity * 100, 100);
+                const strengthLabel = automaticityPercent >= 70 ? 'strong' : 
+                                    automaticityPercent >= 40 ? 'developing' : 'weak';
+                
+                return (
+                  <div key={habit.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 text-lg mb-1">{habit.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+                            {habit.category}
+                          </span>
+                          <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                            Active
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                          ✏️
+                        </button>
+                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Formation Stage */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">🌱</span>
+                          <span className={`font-semibold ${
+                            permanence.stage === 'Initiation' ? 'text-red-600' :
+                            permanence.stage === 'Development' ? 'text-orange-600' :
+                            permanence.stage === 'Stabilization' ? 'text-blue-600' :
+                            'text-green-600'
+                          }`}>
+                            {permanence.stage} Phase
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">
+                          {permanence.stage === 'Initiation' ? 'Building initial momentum - requires high motivation' :
+                           permanence.stage === 'Development' ? 'Developing consistency - getting easier!' :
+                           permanence.stage === 'Stabilization' ? 'Stabilizing the habit - almost automatic!' :
+                           'Habit is automatic - well done!'}
+                        </p>
+                        
+                        <div className="mb-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Formation Progress</span>
+                            <span className="text-gray-600">{Math.round(progressPercent)}% toward permanent</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-500 ${
+                                permanence.stage === 'Initiation' ? 'bg-red-400' :
+                                permanence.stage === 'Development' ? 'bg-orange-400' :
+                                permanence.stage === 'Stabilization' ? 'bg-blue-400' :
+                                'bg-green-400'
+                              }`}
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-gray-600">
+                          Building foundation ({formationDays}/{permanence.stage === 'Initiation' ? 21 : 
+                                              permanence.stage === 'Development' ? 66 : 
+                                              permanence.stage === 'Stabilization' ? 154 : 365} days). 
+                          {permanence.stage === 'Initiation' ? ' High effort required - this is normal!' :
+                           permanence.stage === 'Development' ? ' Getting easier each day!' :
+                           permanence.stage === 'Stabilization' ? ' Almost there - stay consistent!' :
+                           ' Congratulations - habit formed!'}
+                        </p>
+                      </div>
+
+                      {/* Next Milestone */}
+                      {permanence.stage !== 'Automatic' && (
+                        <div>
+                          <div className="text-sm font-medium text-gray-700 mb-1">Next Milestone</div>
+                          <div className="text-sm text-gray-600">
+                            {permanence.stage === 'Initiation' ? 'Development Phase' :
+                             permanence.stage === 'Development' ? 'Stabilization Phase' :
+                             'Automatic Phase'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            ~{permanence.stage === 'Initiation' ? (21 - formationDays) :
+                               permanence.stage === 'Development' ? (66 - formationDays) :
+                               (154 - formationDays)} days: Almost through the hardest part! Keep going.
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Bottom Stats */}
+                      <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">{Math.round(automaticityPercent)}%</div>
+                          <div className="text-xs text-gray-500">Automaticity</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">Day {formationDays}</div>
+                          <div className="text-xs text-gray-500">Formation</div>
+                        </div>
+                        <div className="text-center">
+                          <div className={`text-2xl font-bold ${
+                            strengthLabel === 'strong' ? 'text-green-600' :
+                            strengthLabel === 'developing' ? 'text-orange-600' :
+                            'text-red-600'
+                          }`}>
+                            {strengthLabel}
+                          </div>
+                          <div className="text-xs text-gray-500">Strength</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Main habit calendar area */}
@@ -890,222 +1231,6 @@ export default function EnhancedHabitsDashboard({
                 </div>
               </div>
 
-              {/* Daily Motivation & Insights */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-xl">✨</span>
-                  <h3 className="text-lg font-semibold text-gray-900">Today's Motivation</h3>
-                </div>
-                <div className="space-y-4">
-                  {/* Progress celebration */}
-                  {completionPercentage > 0 && (
-                    <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg">🎯</span>
-                        <h4 className="font-semibold text-gray-900">Daily Progress</h4>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-2">
-                        You've completed <strong>{completionPercentage}%</strong> of your habits today!
-                      </p>
-                      {completionPercentage === 100 ? (
-                        <p className="text-sm text-green-600 font-medium">🌟 Perfect day! You're building incredible momentum!</p>
-                      ) : completionPercentage >= 70 ? (
-                        <p className="text-sm text-blue-600 font-medium">💪 Great progress! You're so close to a perfect day!</p>
-                      ) : completionPercentage >= 30 ? (
-                        <p className="text-sm text-purple-600 font-medium">🚀 Good start! Every habit completed is a step forward!</p>
-                      ) : (
-                        <p className="text-sm text-orange-600 font-medium">🌅 New day, fresh opportunities! Your future self will thank you!</p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Streak celebration */}
-                  {Object.values(habitStats).some(stat => stat.currentStreak >= 3) && (
-                    <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg">🔥</span>
-                        <h4 className="font-semibold text-gray-900">Streak Power</h4>
-                      </div>
-                      {(() => {
-                        const maxStreak = Math.max(...Object.values(habitStats).map(stat => stat.currentStreak));
-                        const streakHabit = habits.find(h => habitStats[h.id]?.currentStreak === maxStreak);
-                        return (
-                          <div>
-                            <p className="text-sm text-gray-700 mb-1">
-                              <strong>{maxStreak}-day streak</strong> with <em>{streakHabit?.name}</em>!
-                            </p>
-                            <p className="text-sm text-orange-600 font-medium">
-                              {maxStreak >= 21 ? "🏆 You're in the habit formation zone!" :
-                               maxStreak >= 14 ? "⚡ Momentum building! You're creating lasting change!" :
-                               maxStreak >= 7 ? "🌱 One week strong! The habit is taking root!" :
-                               "🌟 Every day counts! You're building something amazing!"}
-                            </p>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-
-                  {/* Journal encouragement */}
-                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">📝</span>
-                      <h4 className="font-semibold text-gray-900">Reflection Moment</h4>
-                    </div>
-                    {recentEntries.length > 0 ? (
-                      <div>
-                        <p className="text-sm text-gray-700 mb-2">
-                          Your last entry was <strong>{(() => {
-                            const lastEntry = recentEntries[0];
-                            const entryDate = new Date(`${lastEntry.year}-${new Date(`1 ${lastEntry.month} 2000`).getMonth() + 1}-${lastEntry.day}`);
-                            const daysDiff = Math.floor((new Date().getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24));
-                            return daysDiff === 0 ? 'today' : daysDiff === 1 ? 'yesterday' : `${daysDiff} days ago`;
-                          })()}</strong>
-                        </p>
-                        <p className="text-sm text-purple-600 font-medium">
-                          💭 Your thoughts shape your reality. What will you capture today?
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm text-gray-700 mb-2">Ready to start your journaling journey?</p>
-                        <p className="text-sm text-purple-600 font-medium">
-                          ✍️ Every great story starts with a single word. Write yours!
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Habit formation science */}
-                  {activeHabits.length > 0 && (
-                    <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg">🧠</span>
-                        <h4 className="font-semibold text-gray-900">Science Insight</h4>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-2">
-                        You're tracking <strong>{activeHabits.length}</strong> habit{activeHabits.length !== 1 ? 's' : ''}
-                      </p>
-                      <p className="text-sm text-teal-600 font-medium">
-                        {activeHabits.length <= 3 ? 
-                          "🎯 Perfect! Research shows 1-3 habits are optimal for lasting change." :
-                          activeHabits.length <= 5 ?
-                          "💪 Ambitious! Focus on consistency over quantity for best results." :
-                          "🌟 Impressive commitment! Consider prioritizing your top 3 for maximum impact."
-                        }
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Analytics & Insights */}
-              {insights && !insights.error && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-xl">📊</span>
-                    <h3 className="text-lg font-semibold text-gray-900">Personal Analytics</h3>
-                  </div>
-
-                  <div className="space-y-6">
-                    {/* Overall Stats */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-green-600">{insights.positiveEntries}</div>
-                        <div className="text-sm text-green-700">Positive</div>
-                      </div>
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-red-600">{insights.negativeEntries}</div>
-                        <div className="text-sm text-red-700">Challenging</div>
-                      </div>
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-gray-600">
-                          {insights.totalEntries - insights.positiveEntries - insights.negativeEntries}
-                        </div>
-                        <div className="text-sm text-gray-700">Neutral</div>
-                      </div>
-                    </div>
-
-                    {/* Top Positive Habits */}
-                    {insights.topPositiveHabits && insights.topPositiveHabits.length > 0 && (
-                      <div>
-                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          🌟 Habits That Boost Your Mood
-                        </h4>
-                        <div className="grid grid-cols-1 gap-3">
-                          {insights.topPositiveHabits.slice(0, 3).map((habit: any, index: number) => (
-                            <div key={habit.habitId} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <span className="text-lg">🎯</span>
-                                <div>
-                                  <div className="font-medium text-green-900">{habit.habitName}</div>
-                                  <div className="text-sm text-green-700">{habit.mentionCount} positive mentions</div>
-                                </div>
-                              </div>
-                              <div className="text-sm text-green-600 font-medium">
-                                +{habit.avgSentiment.toFixed(1)} boost
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* AI Suggestions */}
-                    {insights.suggestions && insights.suggestions.length > 0 && (
-                      <div>
-                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          🤖 Personal Recommendations
-                        </h4>
-                        <div className="space-y-3">
-                          {insights.suggestions.slice(0, 2).map((suggestion: any, index: number) => (
-                            <div key={index} className={`p-3 rounded-lg border-l-4 ${
-                              suggestion.color === 'green' ? 'bg-green-50 border-green-400' :
-                              suggestion.color === 'yellow' ? 'bg-yellow-50 border-yellow-400' :
-                              suggestion.color === 'blue' ? 'bg-blue-50 border-blue-400' :
-                              suggestion.color === 'purple' ? 'bg-purple-50 border-purple-400' :
-                              'bg-indigo-50 border-indigo-400'
-                            }`}>
-                              <div className="flex items-start gap-3">
-                                <span className="text-lg">{suggestion.icon}</span>
-                                <div className="flex-1">
-                                  <h5 className={`font-medium text-sm ${
-                                    suggestion.color === 'green' ? 'text-green-900' :
-                                    suggestion.color === 'yellow' ? 'text-yellow-900' :
-                                    suggestion.color === 'blue' ? 'text-blue-900' :
-                                    suggestion.color === 'purple' ? 'text-purple-900' :
-                                    'text-indigo-900'
-                                  } mb-1`}>
-                                    {suggestion.title}
-                                  </h5>
-                                  <p className={`text-xs ${
-                                    suggestion.color === 'green' ? 'text-green-700' :
-                                    suggestion.color === 'yellow' ? 'text-yellow-700' :
-                                    suggestion.color === 'blue' ? 'text-blue-700' :
-                                    suggestion.color === 'purple' ? 'text-purple-700' :
-                                    'text-indigo-700'
-                                  }`}>
-                                    {suggestion.description}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {loadingInsights && (
-                      <div className="text-center py-6">
-                        <div className="inline-flex items-center gap-3 text-gray-500">
-                          <div className="w-4 h-4 border-2 border-gray-300 border-t-purple-500 rounded-full animate-spin"></div>
-                          Analyzing your patterns...
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Recent entries */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
