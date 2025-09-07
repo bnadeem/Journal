@@ -99,8 +99,9 @@ export default function HabitsDashboard({ initialHabitData }: HabitsDashboardPro
   };
 
   const handleToggleHabit = async (habitId: string, date: Date) => {
+    const dateString = date.toISOString().split('T')[0];
     startTransition(() => {
-      toggleHabitAction(habitId, date, null);
+      toggleHabitAction(habitId, dateString, null);
     });
   };
 

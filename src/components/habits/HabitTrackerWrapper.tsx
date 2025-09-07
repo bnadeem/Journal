@@ -47,9 +47,10 @@ export default function HabitTrackerWrapper({
   }, [initialHabits, initialHabitLogs, dateString]);
 
   const handleToggleHabit = async (habitId: string) => {
-    const date = new Date(parseInt(year), ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month), parseInt(day));
+    const monthNumber = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1;
+    const dateString = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     startTransition(() => {
-      toggleHabitAction(habitId, date, { year, month, day });
+      toggleHabitAction(habitId, dateString, { year, month, day });
     });
   };
 

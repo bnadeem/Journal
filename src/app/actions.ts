@@ -5,8 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 import { MonthName } from '@/types/journal';
 
-export async function toggleHabitAction(habitId: string, date: Date, slug: {year: string, month: string, day: string} | null) {
-  const dateString = date.toISOString().split('T')[0];
+export async function toggleHabitAction(habitId: string, dateString: string, slug: {year: string, month: string, day: string} | null) {
 
   // Check if habit log exists
   const existingResult = await client.execute({
